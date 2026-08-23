@@ -4,7 +4,7 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtGui import QIcon
 
-from shell_delta.ui.main_win import MainUserUi
+from shell_delta.ui.main_win.main_win import MainUserUi
 from shell_delta import gb_var
 import shell_delta.style as style
 
