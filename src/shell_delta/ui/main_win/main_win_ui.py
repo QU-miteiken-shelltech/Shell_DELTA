@@ -148,3 +148,5 @@ class MainWinUIMixin:
         self.setStyleSheet(gb_var.style_script.MAIN_WIN_STYLESHEET)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setLayout(main_lo)
+
+    
