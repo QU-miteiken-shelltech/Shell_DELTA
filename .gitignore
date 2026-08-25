@@ -3,3 +3,4 @@
 src/shell_delta/testPNGs/
 /dist/**
 *.sdproj
+**/build/**
