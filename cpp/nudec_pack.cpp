@@ -51,6 +51,7 @@ ktx_pack_uastc_flags ToKtxUastcFlags(UastcQuality q) {
         case UastcQuality::Faster:  return KTX_PACK_UASTC_LEVEL_FASTER;
         case UastcQuality::Default: return KTX_PACK_UASTC_LEVEL_DEFAULT;
         case UastcQuality::Slower:  return KTX_PACK_UASTC_LEVEL_SLOWER;
+        case UastcQuality::Slowest:  return KTX_PACK_UASTC_LEVEL_SLOWEST;
     }
     return KTX_PACK_UASTC_LEVEL_DEFAULT;
 }
@@ -299,7 +300,6 @@ PackResult PackPngSequence(const std::unordered_map<int, std::string>& input_seq
                            const std::string& output_dir,
                            const PackOptions& opt) {
 
-    // ---- 0. オプション検証 --------------------------------------------------
     if (input_seq.empty()) {
         throw std::runtime_error("input_seq is empty.");
     }
@@ -417,7 +417,6 @@ PackResult PackPngSequence(const std::unordered_map<int, std::string>& input_seq
                         | (tiles_per_frame > 1 ? kFlagTiled : 0u)
                         | ((tile_w * tile_cols != frame_w ||
                             tile_h * tile_rows != frame_h) ? kFlagPadded : 0u);
-    // 先に領域だけ確保し、最後に実値で上書きする。
     WriteRaw(ofs, &header, sizeof(header));
 
     // ---- 4. チャンクを1つずつ構築・圧縮・書き出し ---------------------------
@@ -441,7 +440,7 @@ PackResult PackPngSequence(const std::unordered_map<int, std::string>& input_seq
 
         const uint64_t offset = AlignFile(ofs, kChunkAlignment);
         WriteRaw(ofs, chunk_bytes.get(), static_cast<size_t>(chunk_size));
-        chunk_bytes.reset();  // 圧縮済みバッファを即解放
+        chunk_bytes.reset();  
 
         NudecChunkEntry e{};
         e.offset      = offset;

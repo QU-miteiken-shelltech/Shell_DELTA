@@ -59,7 +59,6 @@ void PrintUsage(const char* argv0) {
 "  -j, --threads N         Encoder threads, 0 = auto  (default: 0)\n"
 "  -m, --mipmaps           Generate a full mip chain  (default: off)\n"
 "      --linear            Treat input as linear data instead of sRGB\n"
-"  -r, --recursive         Scan subdirectories too\n"
 "  -n, --dry-run           List detected frames and exit without encoding\n"
 "  -Q, --quiet             Suppress progress output\n"
 "  -h, --help              Show this message\n"
