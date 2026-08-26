@@ -162,12 +162,12 @@ struct NudecHeader {
 };
 
 struct NudecChunkEntry {
-    uint64_t offset;        // .ktx2 バイト列の開始位置
-    uint64_t size;          // .ktx2 バイト列の長さ
-    uint32_t first_layer;   // このチャンクが担当する global layer の先頭
-    uint32_t layer_count;   // = KTX2 側の numLayers
-    uint32_t first_frame;   // 担当フレームの先頭 (レイヤー順の index)
-    uint32_t frame_count;   // 担当フレーム数
+    uint64_t offset;        　　　　// .ktx2 バイト列の開始位置
+    uint64_t size;          　　　　// .ktx2 バイト列の長さ
+    uint32_t first_layer;   　　　　// このチャンクが担当する global layer の先頭
+    uint32_t layer_count;  　　　　 // = KTX2 側の numLayers
+    uint32_t first_frame;  　　　　 // 担当フレームの先頭 (レイヤー順の index)
+    uint32_t frame_count;  　　　　 // 担当フレーム数
 };
 #pragma pack(pop)
 
