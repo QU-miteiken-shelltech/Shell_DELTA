@@ -19,6 +19,12 @@
 #    4. 環境変数 NLOHMANN_JSON_ROOT
 #    5. システム標準パス / pkg-config
 #
+#  glad (OpenGL ローダー) について:
+#    configure 時に Dav1dde/glad を FetchContent で取得し、
+#    glad_add_library() でローダーを生成する (Python3 + jinja2 が必要)。
+#    生成される API/バージョンは -DNUDEC_GLAD_API=<spec> で変更可能
+#    (既定値: "gl:core=4.6")。
+#
 #  その他のオプション:
 #    -DNUDEC_BUILD_TOOL=OFF   CLI 実行ファイルを作らずライブラリのみビルド
 #    -DOpenCV_DIR=<path>      OpenCVConfig.cmake のあるディレクトリ
@@ -419,18 +425,68 @@ if(NOT NUDEC_JSON_SKIP_VERIFY)
 endif()
 
 # =============================================================================
+#  依存: glad (OpenGL ローダー)
+#
+#  glad は通常のプリビルド配布物ではなく、必要な API/バージョンに応じて
+#  ソースをその場で生成するツールである。ここでは Dav1dde/glad の CMake
+#  統合 (glad_add_library) を使い、configure 時に OpenGL ローダーを
+#  生成してターゲット化する。
+#
+#  注意:
+#    - configure 時に Python3 (+ jinja2) がビルドマシンに必要
+#      (glad の生成スクリプトが Python 製のため)。
+#    - ネットワークアクセスが必要 (FetchContent で Dav1dde/glad を取得)。
+#    - 生成される API/プロファイルは NUDEC_GLAD_API で変更できる。
+#      例: "gl:compat=3.3", "gl:core=4.1" 等。
+# =============================================================================
+set(NUDEC_GLAD_TAG "v2.0.6"      CACHE STRING "Dav1dde/glad git tag used to fetch the loader generator")
+set(NUDEC_GLAD_API "gl:core=4.6" CACHE STRING "glad API spec passed to glad_add_library, e.g. gl:core=4.6")
+
+include(FetchContent)
+message(STATUS "[nudec] fetching glad loader generator (Dav1dde/glad ${NUDEC_GLAD_TAG})")
+FetchContent_Declare(glad_generator
+    GIT_REPOSITORY https://github.com/Dav1dde/glad.git
+    GIT_TAG        ${NUDEC_GLAD_TAG}
+    GIT_SHALLOW    TRUE
+    SOURCE_SUBDIR  cmake)  # Dav1dde/glad のCMake統合(GladConfig.cmake, glad_add_library())は
+                           # リポジトリ直下ではなく cmake/ の下にあるため、
+                           # FetchContent が自動 add_subdirectory する対象をここで明示する。
+FetchContent_MakeAvailable(glad_generator)
+
+if(NOT COMMAND glad_add_library)
+    message(FATAL_ERROR
+        "[nudec] glad_add_library() is not available after fetching "
+        "Dav1dde/glad ${NUDEC_GLAD_TAG}.\n"
+        "  This usually means Python 3 (and the 'jinja2' package) is not\n"
+        "  available on this machine - glad's generator is written in Python\n"
+        "  and CMake invokes it during configure.\n"
+        "\n"
+        "  Install Python 3 and run: pip install jinja2\n"
+        "  then re-run cmake configure.")
+endif()
+
+# STATIC ライブラリとして生成する。ターゲット名は nudec_glad。
+glad_add_library(nudec_glad STATIC API ${NUDEC_GLAD_API})
+
+set(NUDEC_GLAD_TARGET nudec_glad)
+message(STATUS "[nudec] glad: generated via Dav1dde/glad ${NUDEC_GLAD_TAG}, API '${NUDEC_GLAD_API}'")
+
+# =============================================================================
 #  ライブラリ本体
 #
-#  libktx / OpenCV / nlohmann_json はいずれも PRIVATE でリンクする。
+#  nlohmann/json と OpenCV は PRIVATE でリンクする。
 #  nudec_pack.h は標準ライブラリにしか依存しない設計なので、利用側に
-#  サードパーティの include path が伝播しない。
-#  ※ nudec_pack.h の公開 API に nlohmann::json 型を出す場合は、
-#     nlohmann_json のみ PUBLIC に変更する必要がある。
+#  これらの include path は伝播しない。
+#
+#  一方 libktx と glad は PUBLIC でリンクする。
+#  公開ヘッダ nudec_decode.h が <ktx.h> / <glad/glad.h> を直接 include
+#  しており、これを利用する側 (nudec::nudec をリンクする側) にも
+#  同じヘッダが見える必要があるため。
 # =============================================================================
 # ソースが揃っているかを先に確認する。
 # add_library が出す "Cannot find source file" は原因が分かりにくいため、
 # 何をどこに置くべきかを明示したメッセージに差し替える。
-foreach(_src nudec_pack.cpp nudec_pack.h)
+foreach(_src nudec_pack.cpp nudec_pack.h nudec_decode.cpp nudec_decode.h)
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
         message(FATAL_ERROR
             "[nudec] missing source file: ${_src}\n"
@@ -439,6 +495,8 @@ foreach(_src nudec_pack.cpp nudec_pack.h)
             "      CMakeLists.txt\n"
             "      nudec_pack.h\n"
             "      nudec_pack.cpp\n"
+            "      nudec_decode.h\n"
+            "      nudec_decode.cpp\n"
             "      entry.cpp        (only needed when NUDEC_BUILD_TOOL=ON)\n")
     endif()
 endforeach()
@@ -452,7 +510,9 @@ endif()
 
 add_library(nudec STATIC
     nudec_pack.cpp
-    nudec_pack.h)
+    nudec_pack.h
+    nudec_decode.cpp
+    nudec_decode.h)
 
 add_library(nudec::nudec ALIAS nudec)
 
@@ -462,8 +522,10 @@ target_include_directories(nudec
         $<INSTALL_INTERFACE:include>)
 
 target_link_libraries(nudec
-    PRIVATE
+    PUBLIC
         ${NUDEC_KTX_TARGET}
+        ${NUDEC_GLAD_TARGET}
+    PRIVATE
         ${NUDEC_JSON_TARGET}
         ${OpenCV_LIBS})
 
@@ -512,7 +574,7 @@ include(GNUInstallDirs)
 install(TARGETS nudec
         EXPORT nudecTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES nudec_pack.h
+install(FILES nudec_pack.h nudec_decode.h
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if(NUDEC_BUILD_TOOL)
@@ -523,3 +585,4 @@ message(STATUS "[nudec] build type : ${CMAKE_BUILD_TYPE}")
 message(STATUS "[nudec] build tool : ${NUDEC_BUILD_TOOL}")
 message(STATUS "[nudec] libktx     : ${NUDEC_KTX_SOURCE}")
 message(STATUS "[nudec] json       : ${NUDEC_JSON_SOURCE}")
+message(STATUS "[nudec] glad       : Dav1dde/glad ${NUDEC_GLAD_TAG}, API '${NUDEC_GLAD_API}'")

@@ -162,12 +162,12 @@ struct NudecHeader {
 };
 
 struct NudecChunkEntry {
-    uint64_t offset;        　　　　// .ktx2 バイト列の開始位置
-    uint64_t size;          　　　　// .ktx2 バイト列の長さ
-    uint32_t first_layer;   　　　　// このチャンクが担当する global layer の先頭
-    uint32_t layer_count;  　　　　 // = KTX2 側の numLayers
-    uint32_t first_frame;  　　　　 // 担当フレームの先頭 (レイヤー順の index)
-    uint32_t frame_count;  　　　　 // 担当フレーム数
+    uint64_t offset;            // .ktx2 バイト列の開始位置
+    uint64_t size;              // .ktx2 バイト列の長さ
+    uint32_t first_layer;       // このチャンクが担当する global layer の先頭
+    uint32_t layer_count;       // = KTX2 側の numLayers
+    uint32_t first_frame;       // 担当フレームの先頭 (レイヤー順の index)
+    uint32_t frame_count;       // 担当フレーム数
 };
 #pragma pack(pop)
 
@@ -180,13 +180,17 @@ static_assert(sizeof(NudecChunkEntry) == 32, "NudecChunkEntry layout changed");
 
 // 連番PNG を .nuanim にパックする。
 // 失敗時は std::runtime_error を送出する。
-PackResult PackPngSequence(const std::unordered_map<int, std::string>& input_seq,
-                           const std::string& output_dir,
-                           const PackOptions& opt);
+PackResult PackPngSequence(
+    const std::unordered_map<int, std::string>& input_seq,
+    const std::string& output_dir,
+    const PackOptions& opt
+);
 
 // 既定オプション版。当初ご指定のシグネチャ (戻り値 void) と同じ形。
-void PackPngSequence(const std::unordered_map<int, std::string>& input_seq,
-                     const std::string& output_dir);
+void PackPngSequence(
+    const std::unordered_map<int, std::string>& input_seq,
+    const std::string& output_dir
+);
 
 // 旧名との互換用ラッパー。新規コードでは PackPngSequence を使うこと。
 // 不要なら削除して構わない。

@@ -1,0 +1,4 @@
+dist/
+cpp/build/
+shelldelta_env/
+cpp/build_x/

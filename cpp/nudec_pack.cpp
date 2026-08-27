@@ -51,7 +51,7 @@ ktx_pack_uastc_flags ToKtxUastcFlags(UastcQuality q) {
         case UastcQuality::Faster:  return KTX_PACK_UASTC_LEVEL_FASTER;
         case UastcQuality::Default: return KTX_PACK_UASTC_LEVEL_DEFAULT;
         case UastcQuality::Slower:  return KTX_PACK_UASTC_LEVEL_SLOWER;
-        case UastcQuality::Slowest:  return KTX_PACK_UASTC_LEVEL_SLOWEST;
+        case UastcQuality::Slowest:  return KTX_PACK_UASTC_LEVEL_VERYSLOW;
     }
     return KTX_PACK_UASTC_LEVEL_DEFAULT;
 }
