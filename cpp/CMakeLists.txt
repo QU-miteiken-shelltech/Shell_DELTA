@@ -25,9 +25,15 @@
 #    生成される API/バージョンは -DNUDEC_GLAD_API=<spec> で変更可能
 #    (既定値: "gl:core=4.6")。
 #
+#  Python バインディング (pybind11) について:
+#    nudec_decode.cpp が定義する `import nudec` 用の拡張モジュールを
+#    ビルドする。pip install pybind11 済みの環境が前提 (FetchContentでの
+#    自動取得はしない)。-DNUDEC_BUILD_PYTHON=OFF で無効化できる。
+#
 #  その他のオプション:
-#    -DNUDEC_BUILD_TOOL=OFF   CLI 実行ファイルを作らずライブラリのみビルド
-#    -DOpenCV_DIR=<path>      OpenCVConfig.cmake のあるディレクトリ
+#    -DNUDEC_BUILD_TOOL=OFF    CLI 実行ファイルを作らずライブラリのみビルド
+#    -DNUDEC_BUILD_PYTHON=OFF  Python 拡張モジュール (import nudec) を作らない
+#    -DOpenCV_DIR=<path>       OpenCVConfig.cmake のあるディレクトリ
 # =============================================================================
 
 cmake_minimum_required(VERSION 3.16)
@@ -566,6 +572,76 @@ if(NUDEC_BUILD_TOOL)
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
 
+# =============================================================================
+#  Python バインディング (pybind11)
+#
+#  nudec_decode.cpp / nudec_decode.h は PYBIND11_MODULE(nudec, m) を用いて
+#  `import nudec` で読み込める Python 拡張を定義している。
+#
+#  前提: pip install pybind11 済みの環境を使う。
+#        KTX/JSON と違い FetchContent での自動取得は行わない
+#        (pybind11 は pip 経由で入れるのが一般的なため)。
+#
+#  注意 (実装メモ):
+#    nudec_decode.cpp は既に static ライブラリ `nudec` の一部としてもビルド
+#    されている。しかし PYBIND11_MODULE が生成する初期化関数 (PyInit_nudec)
+#    はどこからも直接参照されないため、static ライブラリを普通にリンクする
+#    だけでは (「参照されたシンボルだけ引っ張る」という static link の仕様上)
+#    リンクから漏れて import 時に失敗する。
+#    ここでは nudec_decode.cpp を拡張モジュール自身のソースとしても渡すこと
+#    でこれを回避している (whole-archive 系のリンカフラグを使う手もあるが、
+#    プラットフォーム依存になるため、単純さを優先してこちらを採用)。
+#    副作用として nudec_decode.cpp は static ライブラリ用とモジュール用で
+#    2 回コンパイルされる。
+# =============================================================================
+option(NUDEC_BUILD_PYTHON "Build the 'nudec' Python extension module (pybind11)" ${NUDEC_IS_TOP_LEVEL})
+
+if(NUDEC_BUILD_PYTHON)
+    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+
+    # pip でインストールされた pybind11 は、CMake の config ファイル
+    # (pybind11Config.cmake) がどこにあるかを `python -m pybind11 --cmakedir`
+    # で教えてくれる。CMAKE_PREFIX_PATH 等で既に見えている場合は不要だが、
+    # 見つからない環境向けの保険としてここで探しておく。
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" -m pybind11 --cmakedir
+        OUTPUT_VARIABLE NUDEC_PYBIND11_CMAKE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE NUDEC_PYBIND11_CMAKEDIR_RESULT
+        ERROR_QUIET)
+
+    if(NUDEC_PYBIND11_CMAKEDIR_RESULT EQUAL 0 AND NUDEC_PYBIND11_CMAKE_DIR)
+        list(APPEND CMAKE_PREFIX_PATH "${NUDEC_PYBIND11_CMAKE_DIR}")
+        message(STATUS "[nudec] pybind11 cmake dir (pip): ${NUDEC_PYBIND11_CMAKE_DIR}")
+    else()
+        message(STATUS
+            "[nudec] 'python -m pybind11 --cmakedir' did not resolve "
+            "(pybind11 not pip-installed for ${Python3_EXECUTABLE}?); "
+            "falling back to normal find_package search paths.")
+    endif()
+
+    find_package(pybind11 CONFIG REQUIRED)
+    message(STATUS "[nudec] pybind11 ${pybind11_VERSION} (Python ${Python3_VERSION} : ${Python3_EXECUTABLE})")
+
+    # ターゲット名は "nudec" にすると static ライブラリ target(nudec)と
+    # 衝突するため "nudec_python_module" とし、生成物のファイル名
+    # (= Python の import 名) だけ OUTPUT_NAME で "nudec" に合わせる。
+    pybind11_add_module(nudec_python_module MODULE nudec_decode.cpp)
+
+    target_include_directories(nudec_python_module
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+    target_link_libraries(nudec_python_module PRIVATE nudec)
+
+    set_target_properties(nudec_python_module PROPERTIES
+        OUTPUT_NAME "nudec"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python")
+
+    message(STATUS
+        "[nudec] python module target: nudec_python_module "
+        "(import name: nudec, output dir: ${CMAKE_BINARY_DIR}/python)")
+endif()
+
 # -----------------------------------------------------------------------------
 #  インストール
 # -----------------------------------------------------------------------------
@@ -581,8 +657,9 @@ if(NUDEC_BUILD_TOOL)
     install(TARGETS nudec_pack RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
-message(STATUS "[nudec] build type : ${CMAKE_BUILD_TYPE}")
-message(STATUS "[nudec] build tool : ${NUDEC_BUILD_TOOL}")
-message(STATUS "[nudec] libktx     : ${NUDEC_KTX_SOURCE}")
-message(STATUS "[nudec] json       : ${NUDEC_JSON_SOURCE}")
-message(STATUS "[nudec] glad       : Dav1dde/glad ${NUDEC_GLAD_TAG}, API '${NUDEC_GLAD_API}'")
+message(STATUS "[nudec] build type   : ${CMAKE_BUILD_TYPE}")
+message(STATUS "[nudec] build tool   : ${NUDEC_BUILD_TOOL}")
+message(STATUS "[nudec] build python : ${NUDEC_BUILD_PYTHON}")
+message(STATUS "[nudec] libktx       : ${NUDEC_KTX_SOURCE}")
+message(STATUS "[nudec] json         : ${NUDEC_JSON_SOURCE}")
+message(STATUS "[nudec] glad         : Dav1dde/glad ${NUDEC_GLAD_TAG}, API '${NUDEC_GLAD_API}'")

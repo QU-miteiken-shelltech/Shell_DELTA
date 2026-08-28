@@ -21,9 +21,9 @@ constexpr size_t COPY_BUF = 8 * 1024 * 1024;
 
 nudec::NudecHeader ReadHeader(std::ifstream& f);
 
-bool VerifyKtx2(
-    std::ifstream& f, 
-    nudec::NudecChunkEntry c
+sts::vector<nudec::NudecChunkEntry> ReadChunkEntries(
+    std::ifstream&f, 
+    nudec::NudecHeader header
 );
 
 std::vector<uint8_t> LoadKtxChunk(
@@ -32,3 +32,5 @@ std::vector<uint8_t> LoadKtxChunk(
 );
 
 GLuint KtxToGLTexture(const std::vector<uint8_t>& ktx_raw);
+
+void InitTextureBuffer(const std::string& path);

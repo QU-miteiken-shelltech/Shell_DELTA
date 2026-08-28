@@ -504,62 +504,6 @@ void PackPngSequence(const std::unordered_map<int, std::string>& input_seq,
     (void)PackPngSequence(input_seq, output_dir, PackOptions{});
 }
 
-// =============================================================================
-//  読み出し
-// =============================================================================
-bool IsNudecFile(const void* first_bytes, size_t size) {
-    if (first_bytes == nullptr || size < sizeof(kNudecMagic)) return false;
-    return std::memcmp(first_bytes, kNudecMagic, sizeof(kNudecMagic)) == 0;
-}
 
-NudecIndex ReadNudecIndex(const std::string& path) {
-    std::ifstream ifs(path, std::ios::binary);
-    if (!ifs) throw std::runtime_error("Failed to open .nuanim: " + path);
-
-    NudecIndex index;
-    ReadRaw(ifs, &index.header, sizeof(NudecHeader), "header");
-
-    if (!IsNudecFile(index.header.magic, sizeof(index.header.magic))) {
-        throw std::runtime_error("Not a NUDEC file: " + path);
-    }
-    if (index.header.version != kNudecVersion) {
-        throw std::runtime_error("Unsupported NUDEC version " +
-                                 std::to_string(index.header.version) +
-                                 " (expected " + std::to_string(kNudecVersion) + ")");
-    }
-    if (index.header.header_size != sizeof(NudecHeader)) {
-        throw std::runtime_error("NUDEC header size mismatch (file=" +
-                                 std::to_string(index.header.header_size) +
-                                 ", build=" + std::to_string(sizeof(NudecHeader)) + ")");
-    }
-
-    index.chunks.resize(index.header.chunk_count);
-    if (index.header.chunk_count > 0) {
-        ifs.seekg(static_cast<std::streamoff>(index.header.chunk_table_offset),
-                  std::ios::beg);
-        ReadRaw(ifs, index.chunks.data(),
-                index.chunks.size() * sizeof(NudecChunkEntry), "chunk table");
-    }
-
-    index.frame_numbers.resize(index.header.frame_count);
-    if (index.header.frame_count > 0) {
-        ifs.seekg(static_cast<std::streamoff>(index.header.frame_index_offset),
-                  std::ios::beg);
-        ReadRaw(ifs, index.frame_numbers.data(),
-                index.frame_numbers.size() * sizeof(int32_t), "frame index table");
-    }
-    return index;
-}
-
-size_t FindChunkForFrame(const NudecIndex& index, uint32_t frame_index) {
-    // chunks は first_frame 昇順に並んでいる。
-    auto it = std::upper_bound(
-        index.chunks.begin(), index.chunks.end(), frame_index,
-        [](uint32_t f, const NudecChunkEntry& e) { return f < e.first_frame; });
-    if (it == index.chunks.begin()) return index.chunks.size();
-    --it;
-    if (frame_index >= it->first_frame + it->frame_count) return index.chunks.size();
-    return static_cast<size_t>(std::distance(index.chunks.begin(), it));
-}
 
 }  // namespace nudec

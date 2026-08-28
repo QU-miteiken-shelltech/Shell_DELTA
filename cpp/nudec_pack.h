@@ -213,16 +213,7 @@ struct NudecIndex {
     std::vector<int32_t>         frame_numbers;  // レイヤー順 -> 元フレーム番号
 };
 
-// .nuanim のヘッダ・チャンクテーブル・フレーム番号表を読み出す。
-// マジック / バージョン / サイズ整合を検証し、不正なら std::runtime_error。
-NudecIndex ReadNudecIndex(const std::string& path);
 
-// 先頭バイト列が NUDEC かどうかを判定する (size >= 8 が必要)。
-bool IsNudecFile(const void* first_bytes, size_t size);
-
-// frame_index (レイヤー順の通し番号) を含むチャンクの添字を返す。
-// 見つからなければ chunks.size() を返す。
-size_t FindChunkForFrame(const NudecIndex& index, uint32_t frame_index);
 
 }  // namespace nudec
 

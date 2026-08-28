@@ -1,8 +1,10 @@
 #include "nudec_pack.h"
 #include "nudec_decode.h"
 
-#include <ktx.h>
 #include <glad/gl.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <ktx.h>
 
 #include <cstdint>
 #include <cstring>
@@ -10,6 +12,13 @@
 #include <fstream>
 #include <vector>
 #include <stdexcept>
+
+namespace py = pybind11;
+
+static std::array<GLuint, 2> texture_buffer{};
+static nudec::NudecHeader nudec_header;
+static std::vector<nudec::NudecChunkEntry> chunk_entries;
+static std::string nuanim_path;
 
 nudec::NudecHeader ReadHeader(std::ifstream& f){
     f.seekg(0, std::ios::beg);
@@ -35,16 +44,25 @@ nudec::NudecHeader ReadHeader(std::ifstream& f){
     return header;
 }
 
-bool VerifyKtx2(std::ifstream& f, nudec::NudecChunkEntry c){
-    f.seekg(c.offset, std::ios::beg);
-    std::array<uint8_t, 12> magic{};
-    f.read(reinterpret_cast<char*>(magic.data()), KTX2_MAGIC.size());
-    bool is_varified = (magic == KTX2_MAGIC);
-    return is_varified;
+std::vector<nudec::NudecChunkEntry> ReadChunkEntries(
+    std::ifstream&f, nudec::NudecHeader header
+){
+    f.seekg(header.chunk_table_offset, std::ios::beg);
+    std::vector<nudec::NudecChunkEntry> chunk_entries{};
+    chunk_entries.resize(header.chunk_count);
+    f.read(reinterpret_cast<char*>(chunk_entries.data()), CHUNK_SIZE * header.chunk_count);
+    return chunk_entries;
 }
 
 std::vector<uint8_t> LoadKtxChunk(std::ifstream& f, nudec::NudecChunkEntry c){
     f.seekg(c.offset, std::ios::beg);
+    std::array<uint8_t, 12> magic{};
+    f.read(reinterpret_cast<char*>(magic.data()), KTX2_MAGIC.size());
+    bool is_verified = (magic == KTX2_MAGIC);
+    if (!is_verified){
+        throw std::runtime_error("KTX2 format verification failed");
+    }
+
     std::vector<uint8_t> ktx_raw(c.size);
     f.read(reinterpret_cast<char*>(ktx_raw.data()), c.size);
     return ktx_raw;
@@ -86,4 +104,42 @@ GLuint KtxToGLTexture(const std::vector<uint8_t>& ktx_raw){
     }
 
     return gl_tex_id;
+}
+
+std::array<GLuint, 2> InitTextureBuffer(const std::string& path){
+    glDeleteTextures(1, &texture_buffer[0]);
+    glDeleteTextures(1, &texture_buffer[1]);
+    nuanim_path = path;
+    std::ifstream ifs(nuanim_path, std::ios::binary);
+    if (!ifs){
+        throw std::runtime_error("File loading error");
+    }
+
+    nudec_header = ReadHeader(ifs);
+    chunk_entries = ReadChunkEntries(ifs, nudec_header);
+    for (int i = 0; i < 2; ++i){
+        nudec::NudecChunkEntry chunk_entry = chunk_entries[i % chunk_entries.size()];
+        std::vector<uint8_t> ktx_raw = LoadKtxChunk(ifs, chunk_entry);
+        GLuint gl_tex_id = KtxToGLTexture(ktx_raw);
+        texture_buffer[i % texture_buffer.size()] = gl_tex_id;
+    }
+    return texture_buffer;
+}
+
+std::array<GLuint, 2> UpdateTextureBuffer(const int chunk_idx){
+    if (chunk_idx > chunk_entries.size() - 1 || chunk_entries.size() == 0){
+        throw std::runtime_error("Chunk index out of range");
+    }
+    std::ifstream ifs(nuanim_path, std::ios::binary);
+    if (!ifs){
+        throw std::runtime_error("File loading error");
+    }
+    glDeleteTextures(1, &texture_buffer[0]);
+    texture_buffer[0] = texture_buffer[1];
+    nudec::NudecChunkEntry chunk_entry = chunk_entries[chunk_idx % chunk_entries.size()];
+    std::vector<uint8_t> ktx_raw = LoadKtxChunk(ifs, chunk_entries);
+    GLuint gl_tex_id = KtxToGLTexture(ktx_raw);
+    texture_buffer[1] = gl_tex_id;
+
+    return texture_buffer;
 }
