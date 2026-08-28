@@ -16,9 +16,7 @@
 //  このヘッダは libktx / OpenCV に依存しない。利用側にサードパーティの
 //  インクルードパスを強制しないため、UASTC 品質は独自 enum で表現している。
 // =============================================================================
-
-#ifndef NUDEC_PACKER_H_
-#define NUDEC_PACKER_H_
+#pragma once
 
 #include <cstdint>
 #include <functional>
@@ -216,5 +214,3 @@ struct NudecIndex {
 
 
 }  // namespace nudec
-
-#endif  // NUDEC_PACKER_H_

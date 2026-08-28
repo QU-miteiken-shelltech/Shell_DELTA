@@ -1,0 +1,40 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.12"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "nudec"
+version = "1.0.0"
+description = "PNG sequence -> UASTC/KTX2 (.nuanim) packer/decoder with VRAM texture streaming"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+  {name = "shinonome-MiDUki", email = "shiinaayame3@gmail.com"}
+]
+keywords = ["ktx2", "opengl", "texture-streaming", "pybind11"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python",
+  "Programming Language :: C++",
+]
+
+[tool.scikit-build]
+wheel.packages = []
+install.strip = true
+
+[tool.scikit-build.cmake.define]
+NUDEC_BUILD_TOOL = "OFF"
+NUDEC_BUILD_PYTHON = "ON"
+
+# --------------------------------------------------------------------------
+# 前提: libktx / OpenCV はこの pyproject.toml ではインストールされない。
+# CMakeLists.txt のコメント (8〜36行目) にある通り、以下のいずれかの方法で
+# ビルド環境に事前に用意しておく必要がある:
+#   - 環境変数 KTX_ROOT を設定する
+#   - -Ccmake.define.NUDEC_FETCH_KTX=ON を `pip install` 時に追加する
+#     (例: pip install . --config-settings=cmake.define.NUDEC_FETCH_KTX=ON)
+#   - システムに pkg-config 経由でインストール済みにしておく
+# glad は FetchContent で自動取得されるため、追加設定は不要
+# (ビルド環境に Python3 + jinja2 が必要な点のみ CMakeLists.txt 22〜26行目の通り)。
+# --------------------------------------------------------------------------

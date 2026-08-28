@@ -657,6 +657,17 @@ if(NUDEC_BUILD_TOOL)
     install(TARGETS nudec_pack RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
+# scikit-build-core 経由の `pip install` 時、CMAKE_INSTALL_PREFIX はホイールの
+# ルート (= site-packages のルート) に設定される。ここでは "nudec" という
+# 単一の拡張モジュールファイル (nudec.so / nudec.pyd) をそのルート直下に
+# 配置し、これまで通り `import nudec` で読み込めるようにする。
+# LIBRARY: Linux/macOS の .so, RUNTIME: Windows の .pyd (DLLと同じ扱いのため)
+if(NUDEC_BUILD_PYTHON)
+    install(TARGETS nudec_python_module
+            LIBRARY DESTINATION .
+            RUNTIME DESTINATION .)
+endif()
+
 message(STATUS "[nudec] build type   : ${CMAKE_BUILD_TYPE}")
 message(STATUS "[nudec] build tool   : ${NUDEC_BUILD_TOOL}")
 message(STATUS "[nudec] build python : ${NUDEC_BUILD_PYTHON}")

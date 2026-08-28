@@ -134,12 +134,27 @@ std::array<GLuint, 2> UpdateTextureBuffer(const int chunk_idx){
     if (!ifs){
         throw std::runtime_error("File loading error");
     }
+
     glDeleteTextures(1, &texture_buffer[0]);
     texture_buffer[0] = texture_buffer[1];
     nudec::NudecChunkEntry chunk_entry = chunk_entries[chunk_idx % chunk_entries.size()];
-    std::vector<uint8_t> ktx_raw = LoadKtxChunk(ifs, chunk_entries);
+    std::vector<uint8_t> ktx_raw = LoadKtxChunk(ifs, chunk_entry);
     GLuint gl_tex_id = KtxToGLTexture(ktx_raw);
     texture_buffer[1] = gl_tex_id;
 
     return texture_buffer;
+}
+
+PYBIND11_MODULE(nudec, m){
+    m.doc("");
+
+    m.def("init_texture_buffer", &InitTextureBuffer,
+          py::arg("path"),
+          "initialize texture buffer"
+          "return: list[int] of length=2");
+
+    m.def("update_texture_buffer", &UpdateTextureBuffer,
+          py::arg("chunk_idx"),
+          "load and switch buffer slots"
+          "return: list[int] of length=2");
 }

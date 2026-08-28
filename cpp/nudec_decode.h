@@ -1,3 +1,5 @@
+#pragma once
+
 #include "nudec_pack.h"
 
 #include <ktx.h>
@@ -21,7 +23,7 @@ constexpr size_t COPY_BUF = 8 * 1024 * 1024;
 
 nudec::NudecHeader ReadHeader(std::ifstream& f);
 
-sts::vector<nudec::NudecChunkEntry> ReadChunkEntries(
+std::vector<nudec::NudecChunkEntry> ReadChunkEntries(
     std::ifstream&f, 
     nudec::NudecHeader header
 );
@@ -33,4 +35,6 @@ std::vector<uint8_t> LoadKtxChunk(
 
 GLuint KtxToGLTexture(const std::vector<uint8_t>& ktx_raw);
 
-void InitTextureBuffer(const std::string& path);
+std::array<GLuint, 2> InitTextureBuffer(const std::string& path);
+
+std::array<GLuint, 2> UpdateTextureBuffer(const int chunk_idx);
