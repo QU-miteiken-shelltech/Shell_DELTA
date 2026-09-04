@@ -1,0 +1,3 @@
+[submodule "nudec"]
+	path = nudec
+	url = https://github.com/QU-miteiken-shelltech/Shell_NUDEC.git
