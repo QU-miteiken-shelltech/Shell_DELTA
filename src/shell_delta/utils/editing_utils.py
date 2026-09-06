@@ -9,12 +9,12 @@ class EditingUtils:
     def get_actual_img_idx(cls,
                             seq_idx: int
                             ) -> int:
-        actual_img_idx = time_map.time_map.get(seq_idx, None)
+        actual_img_idx = time_map.time_map[time_map.active_layer].get(seq_idx, None)
         if actual_img_idx is not None:
             return actual_img_idx
         checking_idx = seq_idx - 1
         while actual_img_idx is None and checking_idx >= 0:
-            actual_img_idx = time_map.time_map.get(checking_idx, None)
+            actual_img_idx = time_map.time_map[time_map.active_layer].get(checking_idx, None)
             checking_idx -= 1
         return actual_img_idx if actual_img_idx is not None else -1
 

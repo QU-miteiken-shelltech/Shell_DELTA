@@ -56,7 +56,7 @@ class TCLExpressionWidget(QWidget):
             "frame" : frame,
             "seq_count" : len(gb_var.base_frame_list),
             "loop_count" : to_frame - from_frame + 1,
-            "cframe" : int(time_map.time_map.get(frame, frame))
+            "cframe" : int(time_map.time_map[time_map.active_layer].get(frame, frame))
         }
         for frame in range(from_frame, to_frame+1):
             tcl_rtn = TCLEngine().run_tcl(
@@ -64,7 +64,7 @@ class TCLExpressionWidget(QWidget):
                 **arguements
             )
             if int(tcl_rtn) in gb_var.base_frame_list:
-                time_map.time_map[frame] = int(tcl_rtn)
+                time_map.time_map[time_map.active_layer][frame] = int(tcl_rtn)
             else:
                 continue
         self.exec_btn.setStyleSheet(f"color : {gb_var.style_script.MAIN_WIN_SUCCESS} ;")
@@ -138,11 +138,11 @@ class CELExpressionWidget(QWidget):
                     "frame" : frame,
                     "seq_count" : len(gb_var.base_frame_list),
                     "loop_count" : to_frame - from_frame + 1,
-                    "cframe" : int(time_map.time_map.get(frame, frame))
+                    "cframe" : int(time_map.time_map[time_map.active_layer].get(frame, frame))
                 }
             )
             if int(cel_rtn) in gb_var.base_frame_list:
-                time_map.time_map[frame] = int(cel_rtn)
+                time_map.time_map[time_map.active_layer][frame] = int(cel_rtn)
             else:
                 continue
         self.exec_btn.setStyleSheet(f"color : {gb_var.style_script.MAIN_WIN_SUCCESS} ;")

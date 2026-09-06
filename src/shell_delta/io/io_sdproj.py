@@ -39,8 +39,9 @@ class IO_sdproj:
             return
         with open(reading_path, "r", encoding="utf-8") as f:
             current_sdproj = json.load(f)
-        current_time_map = current_sdproj.get("time_map", {})
-        time_map.time_map = {int(k) : int(v) for k, v in current_time_map.items()}
+        current_time_map = current_sdproj.get("time_map", [])
+        for time_map_i in current_time_map:
+            time_map.time_map.append({int(k) : int(v) for k, v in time_map_i.items()})
         gb_var.base_frame_list = [int(i) for i in current_sdproj.get("base_frame_list", [])]
         gb_var.sequence_root_dir = Path(current_sdproj["sequence_root_dir"]) if "sequence_root_dir" in current_sdproj else None
         gb_var.mata_filename = current_sdproj.get("mata_filename", None)

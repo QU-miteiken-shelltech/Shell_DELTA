@@ -53,8 +53,8 @@ class MainUserUi(QWidget,
             if not self.inputting:
                 return
             self.inputting = False
-            time_map.time_map[self.seq_idx] = int(self.input_frame_num_str)
-            actual_filename = EditingUtils.get_actual_filepath(img_idx=time_map.time_map[self.seq_idx])
+            time_map.time_map[time_map.active_layer][self.seq_idx] = int(self.input_frame_num_str)
+            actual_filename = EditingUtils.get_actual_filepath(img_idx=time_map.time_map[time_map.active_layer][self.seq_idx])
             designated_image_path = gb_var.sequence_root_dir / actual_filename
             if not designated_image_path.exists():
                 designated_image_path = ""

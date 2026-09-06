@@ -10,11 +10,12 @@ styles = {
     "kawaii_pink" : kawaii_pink, 
     "elegant_light" : elegant_light,
 }
-base_frame_list : list[int] = []
-sequence_root_dir : Path | None = None
-mata_filename : str | None = None
-first_sequence_idx : int = 0
-frame_notation_len : int = 0
+base_frame_list : list[list[int]] = [[]]
+sequence_root_dir : list[Path] = [None]
+mata_filename : list[str] = []
+first_sequence_idx : list[int] = []
+frame_notation_len : list[int] = []
+active_layer: int = 0
 saving_path : Path | None = None
 ref_path: Path | None = None
 ref_video_start: int = 0

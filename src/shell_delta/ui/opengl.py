@@ -21,8 +21,9 @@ class OpenGLImageWidget(QOpenGLWidget):
     def initializeGL(self):
         GL.glClearColor(0, 0, 0, 1.0)
         GL.glEnable(GL.GL_TEXTURE_2D)
+        GL.glEnable(GL.GL_BLEND)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 
-        # PNG 画像を読み込み
         image = QImage(self.image_path).mirrored()
         
         if not image.isNull():
@@ -66,13 +67,19 @@ class OpenGLImageWidget(QOpenGLWidget):
     def send_img_to_buffer(self):
         if self.ram_img_buffer:
             return
-        img_idx_list = list(set([int(v) for _, v in time_map.time_map.items()]))
-        img_file_path_list = [
-            str(gb_var.sequence_root_dir / EditingUtils.get_actual_filepath(img_idx=i)) 
-            for i in img_idx_list
-        ]
+        img_idx_list = []
+        for time_map_i in time_map.time_map:
+            img_idx_list.append(list(set([int(v) for _, v in time_map_i.items()])))
+        img_file_path_list = []
+        for idx in range(0, len(img_idx_list)):
+            img_idx_list_i = img_idx_list[idx]
+            img_file_path_list.append([
+                str(gb_var.sequence_root_dir / EditingUtils.get_actual_filepath(img_idx=i)) 
+                for i in img_idx_list_i
+            ])
         self.ram_img_buffer = {}
-        for img_file_path in img_file_path_list:
+        i = 0
+        for img_file_path in img_file_path_list[i]:
             image = QImage(img_file_path).mirrored()
             if not image.isNull():
                 asp_ratio = image.width() / image.height()

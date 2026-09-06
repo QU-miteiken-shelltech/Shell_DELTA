@@ -108,7 +108,7 @@ class MainWinIOMixin:
         ]
         for num in numbers:
             num = int(num)
-            time_map.time_map[num] = num
+            time_map.time_map[time_map.active_layer][num] = num
         gb_var.base_frame_list = EditingUtils.get_base_frames()
 
     def open_reference(self):
