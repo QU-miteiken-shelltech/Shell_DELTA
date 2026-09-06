@@ -7,8 +7,12 @@ from PySide6.QtGui import QIntValidator, QDoubleValidator
 
 from shell_delta.render import render_formats
 from shell_delta.render.render import RenderVideo
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_global
 
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 class RenderDialog(QDialog):
     def __init__(self, 
@@ -83,7 +87,7 @@ class RenderDialog(QDialog):
         render_btn.clicked.connect(self.send_to_render)
         dialog_lo.addWidget(render_btn)
 
-        self.setStyleSheet(gb_var.style_script.REND_DIALOG_STYLESHEET)
+        self.setStyleSheet(gb_var_global.style_script.REND_DIALOG_STYLESHEET)
         self.setLayout(dialog_lo)
 
     def browse_file(self):

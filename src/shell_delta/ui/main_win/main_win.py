@@ -1,7 +1,8 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QApplication
 
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
 from shell_delta.render import time_map
 from shell_delta.utils.editing_utils import EditingUtils
 from shell_delta.ui.main_win.main_win_ui import MainWinUIMixin
@@ -9,6 +10,8 @@ from shell_delta.ui.main_win.main_win_io import MainWinIOMixin
 from shell_delta.ui.main_win.main_win_playback import MainWinPlaybackMixin
 from shell_delta.ui.main_win.main_win_events import MainWinEventsMixin
 
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 class MainUserUi(QWidget, 
                  MainWinUIMixin, 

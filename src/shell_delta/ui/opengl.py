@@ -7,8 +7,12 @@ from PySide6.QtOpenGL import QOpenGLTexture
 from OpenGL import GL
 
 from shell_delta.render import time_map
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
 from shell_delta.utils.editing_utils import EditingUtils
+
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 class OpenGLImageWidget(QOpenGLWidget):
     def __init__(self, image_path, parent=None):

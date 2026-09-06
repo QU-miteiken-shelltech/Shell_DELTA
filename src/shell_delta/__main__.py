@@ -5,9 +5,13 @@ from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtGui import QIcon
 
 from shell_delta.ui.main_win.main_win import MainUserUi
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_global
 import shell_delta.style as style
 
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 def main():
     app = QApplication(sys.argv)
@@ -16,7 +20,7 @@ def main():
     app.setWindowIcon(QIcon(str(Path(__file__).resolve().parent / "_resources/icon")))
 
     use_style = sys.argv[1] if len(sys.argv) > 1 else "dark_default"
-    gb_var.style_script = gb_var.styles.get(use_style, "dark_default")
+    gb_var_global.style_script = gb_var_global.styles.get(use_style, "dark_default")
 
     window = QMainWindow()
     window.setWindowTitle("Shell DELTA")

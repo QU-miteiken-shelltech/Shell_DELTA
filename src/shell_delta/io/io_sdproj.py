@@ -2,8 +2,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
 from shell_delta.render import time_map
+
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 class IO_sdproj:
     def __init__(self):

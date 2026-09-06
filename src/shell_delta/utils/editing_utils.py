@@ -2,7 +2,11 @@ import re
 from pathlib import Path
 
 from shell_delta.render import time_map
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
+
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 class EditingUtils:
     @classmethod

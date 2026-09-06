@@ -13,7 +13,12 @@ from shell_delta.render import time_map
 from shell_delta.expression.tcl_engine import TCLEngine
 from shell_delta.expression.cel_engine import CELEngine
 from shell_delta.io.io_sdproj import IO_sdproj
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_global
+
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 class TCLExpressionWidget(QWidget):
     def __init__(self):
@@ -67,7 +72,7 @@ class TCLExpressionWidget(QWidget):
                 time_map.time_map[time_map.active_layer][frame] = int(tcl_rtn)
             else:
                 continue
-        self.exec_btn.setStyleSheet(f"color : {gb_var.style_script.MAIN_WIN_SUCCESS} ;")
+        self.exec_btn.setStyleSheet(f"color : {gb_var_global.style_script.MAIN_WIN_SUCCESS} ;")
         self.exec_btn.setText("Executed")
         self.exec_btn.setEnabled(False)
         IO_sdproj.write_sdproj(
@@ -85,7 +90,7 @@ class TCLExpressionWidget(QWidget):
                         btn: QPushButton,
                         original_text: str
                         ):
-        btn.setStyleSheet(f"color : {gb_var.style_script.MAIN_WIN_TEXT} ;")
+        btn.setStyleSheet(f"color : {gb_var_global.style_script.MAIN_WIN_TEXT} ;")
         btn.setText(original_text)
         btn.setEnabled(True)
 
@@ -145,7 +150,7 @@ class CELExpressionWidget(QWidget):
                 time_map.time_map[time_map.active_layer][frame] = int(cel_rtn)
             else:
                 continue
-        self.exec_btn.setStyleSheet(f"color : {gb_var.style_script.MAIN_WIN_SUCCESS} ;")
+        self.exec_btn.setStyleSheet(f"color : {gb_var_global.style_script.MAIN_WIN_SUCCESS} ;")
         self.exec_btn.setText("Executed")
         self.exec_btn.setEnabled(False)
         IO_sdproj.write_sdproj(
@@ -169,6 +174,6 @@ class CELExpressionWidget(QWidget):
                         btn: QPushButton,
                         original_text: str
                         ):
-        btn.setStyleSheet(f"color : {gb_var.style_script.MAIN_WIN_TEXT} ;")
+        btn.setStyleSheet(f"color : {gb_var_global.style_script.MAIN_WIN_TEXT} ;")
         btn.setText(original_text)
         btn.setEnabled(True)

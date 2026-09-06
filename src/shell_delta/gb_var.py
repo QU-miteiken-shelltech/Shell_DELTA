@@ -12,6 +12,7 @@ styles = {
     "kawaii_pink" : kawaii_pink, 
     "elegant_light" : elegant_light,
 }
+style_script: Any = dark_default
 
 IS_CONFIGED: bool = False
 
@@ -25,7 +26,6 @@ class GBVar:
     saving_path : Path | None = None
     ref_path: Path | None = None
     ref_video_start: int = 0
-    style_script: Any = dark_default
 
     _instance: Optional["GBVar"] = None
 
@@ -56,7 +56,6 @@ class GBVar_CTX:
     saving_path : Path | None = None
     ref_path: Path | None = None
     ref_video_start: int = 0
-    style_script: Any = dark_default
 
     _instance: Optional["GBVar_CTX"] = None
 
@@ -90,17 +89,16 @@ class GBVar_CTX:
         self.saving_path = gbvar.saving_path
         self.ref_path = gbvar.ref_path
         self.ref_video_start = gbvar.ref_video_start
-        self.style_script = gbvar.style_script
 
 def get_gbvar_full(init_data: Optional[Dict[str, Any]]=None):
     if not IS_CONFIGED and init_data is None:
         print("Unconfiged")
-        return
+        raise
     return GBVar.get_instance(init_data=init_data)
 
 def get_gbvar_ctx():
     if not IS_CONFIGED:
         print("Unconfiged")
-        return
+        raise
     return GBVar_CTX.get_instance()
 

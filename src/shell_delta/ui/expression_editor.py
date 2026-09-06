@@ -3,8 +3,13 @@ from PySide6.QtWidgets import (
     QPushButton, QHBoxLayout, QFileDialog
 )
 
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_global
 from shell_delta.io.io_sdproj import IO_sdproj
+
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 class ExpressionEditor(QDialog):
     def __init__(self):
@@ -30,7 +35,7 @@ class ExpressionEditor(QDialog):
         btn_lo.addWidget(open_tcl_btn)
         dialog_lo.addLayout(btn_lo)
 
-        self.setStyleSheet(gb_var.style_script.EXP_EDITOR_STYLESHEET)
+        self.setStyleSheet(gb_var_global.style_script.EXP_EDITOR_STYLESHEET)
         self.setLayout(dialog_lo)
 
     def load_tcl_script(self):

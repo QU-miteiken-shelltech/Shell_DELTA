@@ -5,8 +5,12 @@ import psutil
 
 from shell_delta.ui.render_dialog import RenderDialog
 from shell_delta.utils.editing_utils import EditingUtils
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_global
 
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 class MainWinPlaybackMixin:
 
@@ -65,7 +69,7 @@ class MainWinPlaybackMixin:
     def render_sequence(self):
         render_dialog_call = RenderDialog(fps=int(self.fps_input_field.text())).exec()
         if render_dialog_call == QDialog.Accepted:
-            self.render_btn.setStyleSheet(f"color : {gb_var.style_script.MAIN_WIN_SUCCESS} ;")
+            self.render_btn.setStyleSheet(f"color : {gb_var_global.style_script.MAIN_WIN_SUCCESS} ;")
             self.render_btn.setText("Rendered")
             self.render_btn.setEnabled(False)
             QTimer().singleShot(
@@ -89,6 +93,6 @@ class MainWinPlaybackMixin:
                      btn: QPushButton,
                      original_text: str
                      ):
-        btn.setStyleSheet(f"color : {gb_var.style_script.MAIN_WIN_TEXT} ;")
+        btn.setStyleSheet(f"color : {gb_var_global.style_script.MAIN_WIN_TEXT} ;")
         btn.setText(original_text)
         btn.setEnabled(True)

@@ -10,8 +10,12 @@ import psutil
 
 from shell_delta.ui.opengl import OpenGLImageWidget
 from shell_delta.ui.expression_widgets import TCLExpressionWidget, CELExpressionWidget
-from shell_delta import gb_var
+from shell_delta.gb_var import get_gbvar_ctx
+from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_global
 
+gb_var = get_gbvar_ctx()
+gb_var_full = get_gbvar_full()
 
 class MainWinUIMixin:
     def _init_ui(self):
@@ -39,8 +43,8 @@ class MainWinUIMixin:
         self.current_actual_img_idx_label.setFixedWidth(50)
         self.current_actual_img_idx_label.setAlignment(Qt.AlignCenter)
         self.current_actual_img_idx_label.setStyleSheet(
-            f"border: 1px solid {gb_var.style_script.MAIN_WIN_ACCENT}; border-radius: 6px; "
-            f"background-color: {gb_var.style_script.MAIN_WIN_PANEL}; color: {gb_var.style_script.MAIN_WIN_TEXT}; font-weight: 600;"
+            f"border: 1px solid {gb_var_global.style_script.MAIN_WIN_ACCENT}; border-radius: 6px; "
+            f"background-color: {gb_var_global.style_script.MAIN_WIN_PANEL}; color: {gb_var_global.style_script.MAIN_WIN_TEXT}; font-weight: 600;"
         )
         labels_lo.addWidget(self.current_actual_img_idx_label)
         self.current_opened_label = QLabel("Working Sequence : None")
@@ -145,7 +149,7 @@ class MainWinUIMixin:
         self.expression_widgets.hide()
         self.expression_lang_combo.hide()
 
-        self.setStyleSheet(gb_var.style_script.MAIN_WIN_STYLESHEET)
+        self.setStyleSheet(gb_var_global.style_script.MAIN_WIN_STYLESHEET)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setLayout(main_lo)
 
