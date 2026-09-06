@@ -37,7 +37,6 @@ class OpenGLImageWidget(QOpenGLWidget):
 
     def initializeGL(self):
         GL.glClearColor(0, 0, 0, 1.0)
-        GL.glEnable(GL.GL_TEXTURE_2D)
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 
@@ -92,7 +91,6 @@ class OpenGLImageWidget(QOpenGLWidget):
         )
         GL.glBindVertexArray(0)
 
-
         image = QImage(self.image_path).mirrored()
         
         if not image.isNull():
@@ -125,7 +123,7 @@ class OpenGLImageWidget(QOpenGLWidget):
                      new_image_paths: list[str] | list[Path]
                      ) -> None:
         if self.ram_img_buffer:
-            self.change_image_onram(next_image_path=new_image_paths)
+            self.change_image_onram(next_image_paths=new_image_paths)
             return
         new_image_paths = [str(x) for x in new_image_paths]
         self.makeCurrent()
@@ -164,20 +162,20 @@ class OpenGLImageWidget(QOpenGLWidget):
 
 
     def change_image_onram(self,
-                           next_image_path: list[str] | list[Path]
+                           next_image_paths: list[str] | list[Path]
                            ) -> None:
         if not self.ram_img_buffer:
             return
-        next_image_path = [str(x) for x in next_image_path]
+        next_image_paths = [str(x) for x in next_image_paths]
         try:
             self.texture = []
             for ram_img_buffer_i in self.ram_img_buffer:
-                buf = ram_img_buffer_i.get(next_image_path, "")
+                buf = ram_img_buffer_i.get(next_image_paths, "")
                 self.texture.append(buf[0])
                 self.image_ratio = buf[1]
             self.update()
         except:
-            print(next_image_path)
+            print(next_image_paths)
             pass
 
     def release_buffer(self):
@@ -197,25 +195,6 @@ class OpenGLImageWidget(QOpenGLWidget):
 
     def resizeGL(self, w, h):
         GL.glViewport(0, 0, w, h)
-        
-        # 投影行列を設定してアスペクト比を補正
-        GL.glMatrixMode(GL.GL_PROJECTION)
-        GL.glLoadIdentity()
-        
-        widget_ratio = w / h if h != 0 else 1.0
-
-        # ウィンドウと画像の縦横比を比較し、描画範囲 (glOrtho) を調整
-        if widget_ratio > self.image_ratio:
-            # ウィンドウの方が横長：左右に余白を作る
-            factor = widget_ratio / self.image_ratio
-            GL.glOrtho(-factor, factor, -1.0, 1.0, -1.0, 1.0)
-        else:
-            # ウィンドウの方が縦長：上下に余白を作る
-            factor = self.image_ratio / widget_ratio
-            GL.glOrtho(-1.0, 1.0, -factor, factor, -1.0, 1.0)
-
-        GL.glMatrixMode(GL.GL_MODELVIEW)
-        GL.glLoadIdentity()
 
     def paintGL(self):
         GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
@@ -237,6 +216,11 @@ class OpenGLImageWidget(QOpenGLWidget):
 
         n = min(len(self.texture), MAX_LAYERS)
 
+        for t in self.texture:
+            if not t.isCreated() or t.textureId() == 0:
+                self.release_buffer()
+                return
+
         unit_indicies = []
         enabled_flags = []
         for i in range(MAX_LAYERS):
@@ -253,29 +237,13 @@ class OpenGLImageWidget(QOpenGLWidget):
         self.program.setUniformValue("uLayerCount", n)
         self.program.setUniformValue("uBgColor", 0.0, 0.0, 0.0)
 
-        if not self.texture.isCreated() or self.texture.textureId() == 0:
-            self.release_buffer()
-            self.send_img_to_buffer()
-            return
-        self.texture.bind()
+        GL.glBindVertexArray(self.vao)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+        GL.glBindVertexArray(0)
 
-        # -1.0 〜 1.0 の正方形の矩形を描画（resizeGL の glOrtho 側で比率を吸収）
-        GL.glBegin(GL.GL_QUADS)
-        
-        GL.glTexCoord2f(0.0, 0.0)
-        GL.glVertex2f(-1.0, -1.0)
+        for i in range(n):
+            self.texture[i].release()
+        self.program.release()
 
-        GL.glTexCoord2f(1.0, 0.0)
-        GL.glVertex2f(1.0, -1.0)
-
-        GL.glTexCoord2f(1.0, 1.0)
-        GL.glVertex2f(1.0, 1.0)
-
-        GL.glTexCoord2f(0.0, 1.0)
-        GL.glVertex2f(-1.0, 1.0)
-
-        GL.glEnd()
-
-        self.texture.release()
 
 

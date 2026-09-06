@@ -61,7 +61,7 @@ class MainWinPlaybackMixin:
         if not next_image_path.exists():
             next_image_path = ""
         self.gl_widget.change_image_onram(
-            next_image_path=next_image_path
+            next_image_paths=next_image_path
         )
 
 

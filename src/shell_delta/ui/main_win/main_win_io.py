@@ -44,7 +44,7 @@ class MainWinIOMixin:
             new_image_paths=str(new_image_path)
             )
         self.ref_gl_widget.change_image(
-            new_image_path=str(new_image_path)
+            new_image_paths=str(new_image_path)
         )
         self.current_opened_label.setText(
             f"Working Sequence : {gb_var.sequence_root_dir / gb_var.mata_filename}"
