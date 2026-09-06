@@ -1,11 +1,10 @@
 import tkinter
 
 from shell_delta.io.io_sdproj import IO_sdproj
-from shell_delta.gb_var import get_gbvar_ctx
-from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_script
 
-gb_var = get_gbvar_ctx()
-gb_var_full = get_gbvar_full()
+gb_var = gb_var_script.get_gbvar_ctx()
+gb_var_full = gb_var_script.get_gbvar_full()
 
 class TCLEngine:
     def __init__(self):

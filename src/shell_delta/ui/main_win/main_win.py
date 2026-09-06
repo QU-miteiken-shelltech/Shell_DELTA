@@ -1,17 +1,16 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QApplication
 
-from shell_delta.gb_var import get_gbvar_ctx
-from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_script
 from shell_delta.render import time_map
 from shell_delta.utils.editing_utils import EditingUtils
 from shell_delta.ui.main_win.main_win_ui import MainWinUIMixin
 from shell_delta.ui.main_win.main_win_io import MainWinIOMixin
 from shell_delta.ui.main_win.main_win_playback import MainWinPlaybackMixin
 from shell_delta.ui.main_win.main_win_events import MainWinEventsMixin
-
-gb_var = get_gbvar_ctx()
-gb_var_full = get_gbvar_full()
+ 
+gb_var = gb_var_script.get_gbvar_ctx()
+gb_var_full = gb_var_script.get_gbvar_full()
 
 class MainUserUi(QWidget, 
                  MainWinUIMixin, 
@@ -23,8 +22,7 @@ class MainUserUi(QWidget,
         super().__init__()
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setMouseTracking(True)
-
-        gb_var.frame_notation_len = 0
+        gb_var_full.frame_notation_len = 0
         self.is_on_main_window = True
         self.inputting = False
         self.seq_idx = 0

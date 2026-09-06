@@ -5,13 +5,9 @@ from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtGui import QIcon
 
 from shell_delta.ui.main_win.main_win import MainUserUi
-from shell_delta.gb_var import get_gbvar_ctx
-from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_script
 from shell_delta import gb_var as gb_var_global
 import shell_delta.style as style
-
-gb_var = get_gbvar_ctx()
-gb_var_full = get_gbvar_full()
 
 def main():
     app = QApplication(sys.argv)

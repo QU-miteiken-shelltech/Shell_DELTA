@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from dataclasses import dataclass, asdict
 
 from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import QFileDialog
@@ -9,11 +10,10 @@ from shell_delta.render import time_map
 from shell_delta.io.io_sdproj import IO_sdproj
 from shell_delta.expression.tcl_engine import TCLEngine
 from shell_delta.utils.editing_utils import EditingUtils
-from shell_delta.gb_var import get_gbvar_ctx
-from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_script
 
-gb_var = get_gbvar_ctx()
-gb_var_full = get_gbvar_full()
+gb_var = gb_var_script.get_gbvar_ctx()
+gb_var_full = gb_var_script.get_gbvar_full()
 
 class MainWinIOMixin:
 
@@ -28,6 +28,7 @@ class MainWinIOMixin:
         if not filename:
             return
         IO_sdproj.load_sdproj(reading_path=filename)
+        print(asdict(gb_var_full))
         self.seq_idx = 1
         if gb_var.mata_filename is None:
             return
@@ -54,7 +55,10 @@ class MainWinIOMixin:
         cv2_videocap.release()
         self.fps_input_field.setText(str(self.ref_fps))
         self._show_expression_panel()
-
+        #DEBUG
+        print(asdict(gb_var_full))
+        print(asdict(gb_var))
+        #DEBUG
 
     def save_proj(self):
         if gb_var.saving_path is None:
@@ -63,21 +67,23 @@ class MainWinIOMixin:
                 return
         else:
             filename = str(gb_var.saving_path)
+        active_layer = gb_var.active_layer
+        gb_var.write_to_main(active_layer=active_layer)
         writing_info = {
             "base_frame_list" : EditingUtils.get_base_frames(),
             "time_map" : time_map.time_map,
-            "sequence_root_dir" : str(gb_var.sequence_root_dir),
-            "mata_filename" : gb_var.mata_filename,
-            "first_sequence_idx" : gb_var.first_sequence_idx,
-            "frame_notation_len" : gb_var.frame_notation_len,
-            "ref_video_start": gb_var.ref_video_start,
-            "ref_path" : str(gb_var.ref_path)
+            "sequence_root_dir" : [str(x) for x in gb_var_full.sequence_root_dir],
+            "mata_filename" : gb_var_full.mata_filename,
+            "first_sequence_idx" : gb_var_full.first_sequence_idx,
+            "frame_notation_len" : gb_var_full.frame_notation_len,
+            "ref_video_start": gb_var_full.ref_video_start,
+            "ref_path" : str(gb_var_full.ref_path)
         }
         print(writing_info)
         IO_sdproj.write_sdproj(
             saving_path=filename,
             writing_info=writing_info
-            )
+        )
         self._show_expression_panel()
 
     def open_sequence(self):

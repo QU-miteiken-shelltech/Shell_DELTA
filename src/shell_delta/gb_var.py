@@ -1,5 +1,5 @@
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Optional, Dict, Any
 
 from shell_delta.style import (
@@ -30,19 +30,34 @@ class GBVar:
     _instance: Optional["GBVar"] = None
 
     @classmethod
-    def get_instance(cls, 
-                     init_data: Optional[Dict[str, Any]] = None
-                     ) -> "GBVar":
-        global IS_CONFIGED
+    def get_instance(cls) -> "GBVar":
         if cls._instance is None:
-            if init_data is None:
-                init_data = {}
-            cls._instance = cls(**init_data)
-            IS_CONFIGED = True
+            cls._instance = cls()
         return cls._instance
 
-    def __post_init__(self):
+    def initialize(self, 
+                   init_data: Optional[Dict[str, Any]]):
+        global IS_CONFIGED
+        valid_fields = {f.name for f in fields(self)}
+        for k, v in init_data.items():
+            if k in valid_fields:
+                setattr(self, k, v)
+            else:
+                raise KeyError(f"Key : {k} not exist, so initilization failed")
+        IS_CONFIGED = True
         GBVar_CTX.get_instance().initialize()
+
+    def __getattribute__(self, name):
+        global IS_CONFIGED
+        if name in ("__dict__", "__class__", "__dataclass_fields__") or name.startswith("_"):
+            return super().__getattribute__(name)
+        attr = super().__getattribute__(name)
+        if callable(attr):
+            return attr
+        if not IS_CONFIGED:
+            raise KeyError(f"Unconfiged yet: cannot access '{name}'")
+        
+        return attr
 
 
 @dataclass
@@ -65,6 +80,20 @@ class GBVar_CTX:
             cls._instance = cls()
         return cls._instance
 
+    def __getattribute__(self, name):
+        global IS_CONFIGED
+        if name in ("__dict__", "__class__", "__dataclass_fields__") or name.startswith("_"):
+            return super().__getattribute__(name)
+        
+        attr = super().__getattribute__(name)
+        if callable(attr):
+            return attr
+
+        if not IS_CONFIGED:
+            raise KeyError(f"Unconfiged yet: cannot access '{name}'")
+        
+        return attr
+
     def write_to_main(self, active_layer: int):
         gbvar = GBVar.get_instance()
         gbvar.base_frame_list[active_layer] = self.base_frame_list
@@ -73,9 +102,12 @@ class GBVar_CTX:
         gbvar.first_sequence_idx[active_layer] = self.first_sequence_idx
         gbvar.frame_notation_len[active_layer] = self.frame_notation_len
 
-    def switch_layer(self, active_layer: int):
+    def switch_layer(self, 
+                     active_layer: int, 
+                     do_write_back: bool=True):
         gbvar = GBVar.get_instance()
-        self.write_to_main(active_layer=active_layer)
+        if do_write_back:
+            self.write_to_main(active_layer=active_layer)
         self.active_layer = active_layer
         self.base_frame_list = gbvar.base_frame_list[active_layer]
         self.sequence_root_dir = gbvar.sequence_root_dir[active_layer]
@@ -85,20 +117,13 @@ class GBVar_CTX:
 
     def initialize(self):
         gbvar = GBVar.get_instance()
-        self.switch_layer(active_layer=0)
+        self.switch_layer(active_layer=0, do_write_back=False)
         self.saving_path = gbvar.saving_path
         self.ref_path = gbvar.ref_path
         self.ref_video_start = gbvar.ref_video_start
 
-def get_gbvar_full(init_data: Optional[Dict[str, Any]]=None):
-    if not IS_CONFIGED and init_data is None:
-        print("Unconfiged")
-        raise
-    return GBVar.get_instance(init_data=init_data)
+def get_gbvar_full():
+    return GBVar.get_instance()
 
 def get_gbvar_ctx():
-    if not IS_CONFIGED:
-        print("Unconfiged")
-        raise
     return GBVar_CTX.get_instance()
-

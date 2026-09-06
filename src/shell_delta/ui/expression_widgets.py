@@ -13,12 +13,11 @@ from shell_delta.render import time_map
 from shell_delta.expression.tcl_engine import TCLEngine
 from shell_delta.expression.cel_engine import CELEngine
 from shell_delta.io.io_sdproj import IO_sdproj
-from shell_delta.gb_var import get_gbvar_ctx
-from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_script
 from shell_delta import gb_var as gb_var_global
 
-gb_var = get_gbvar_ctx()
-gb_var_full = get_gbvar_full()
+gb_var = gb_var_script.get_gbvar_ctx()
+gb_var_full = gb_var_script.get_gbvar_full()
 
 class TCLExpressionWidget(QWidget):
     def __init__(self):

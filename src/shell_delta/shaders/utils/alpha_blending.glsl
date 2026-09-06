@@ -2,7 +2,7 @@
 in vec2 vTex;
 out vec4 FragColor;
 
-#define MAX_LAYERS 8
+#define MAX_LAYERS 16
 uniform sampler2D uLayers[MAX_LAYERS];   
 uniform int  uLayerEnabled[MAX_LAYERS]; 
 uniform int  uLayerCount;             

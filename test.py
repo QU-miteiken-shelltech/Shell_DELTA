@@ -1,186 +1,204 @@
 import sys
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget
-from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtOpenGL import QOpenGLShaderProgram, QOpenGLShader, QOpenGLVertexArrayObject, QOpenGLBuffer
-from PySide6.QtGui import QSurfaceFormat
 import ctypes
+from pathlib import Path
 
-# 共通の頂点シェーダー（全画面の四角形を描画）
-VERTEX_SHADER = """
-#version 330 core
-in vec2 position;
-void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
-}
-"""
+import numpy as np
+import OpenGL.GL as gl
 
-# 初期状態のフラグメントシェーダー（青色）
-INITIAL_FRAGMENT_SHADER = """
-#version 330 core
-out vec4 fragColor;
-void main() {
-    fragColor = vec4(0.0, 0.4, 0.8, 1.0); // 青
-}
-"""
+from PySide6.QtGui import QImage, QSurfaceFormat
+from PySide6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QPushButton,
+    QMessageBox,
+)
+from PySide6.QtOpenGLWidgets import QOpenGLWidget
+from PySide6.QtOpenGL import QOpenGLShader, QOpenGLShaderProgram, QOpenGLTexture
 
-# ボタンを押したときに適用する新しいフラグメントシェーダーコード (x: str)
-NEW_FRAGMENT_SHADER = """
-#version 330 core
-out vec4 fragColor;
-uniform float u_time; // 時間に応じて色が変化するシェーダー
-void main() {
-    // 時間で赤〜黄に変化させる
-    float r = abs(sin(u_time));
-    float g = abs(cos(u_time));
-    fragColor = vec4(r, g, 0.2, 1.0);
-}
-"""
+MAX_LAYERS = 16
 
-# 全画面を覆う三角形ストリップ用の頂点データ (x, y)
-QUAD_VERTICES = [
-    -1.0, -1.0,
-     1.0, -1.0,
-    -1.0,  1.0,
-     1.0,  1.0,
-]
+class GLWidget(QOpenGLWidget):
+    """GLSLでA/Bの合成を行うOpenGL描画ウィジェット"""
 
-
-class ShaderWidget(QOpenGLWidget):
-    """
-    修正点:
-    - QOpenGLFunctions の多重継承をやめ、self.context().functions() を使う
-      (PySide6での多重継承はクラッシュしやすいため)
-    - initializeGL 内では makeCurrent/doneCurrent を呼ばない
-      (Qtがすでにコンテキストをcurrentにしているため、doneCurrentを呼ぶと
-       以降のpaintGLでコンテキスト状態がおかしくなりセグフォの原因になる)
-    - 実際に頂点を描画するようVAO/VBOとglDrawArraysを追加
-    """
-    def __init__(self, parent=None):
+    def __init__(self, paths, parent=None):
         super().__init__(parent)
-        self.shader_program = None
-        self.time_val = 0.0
-        self.gl = None  # initializeGLで設定するGL関数セット
+        self.paths = paths
+        # self.path_a = path_a
+        # self.path_b = path_b
+        self.show_idx = 0
+
+        self.program = None
+        self.tex = []
+        # self.tex_a = None
+        # self.tex_b = None
         self.vao = None
         self.vbo = None
 
-        self.anim_timer = QTimer(self)
-        self.anim_timer.timeout.connect(self.update_animation)
-        self.anim_timer.start(16)  # 約60FPS
+        fmt = QSurfaceFormat()
+        fmt.setVersion(3, 3)
+        fmt.setProfile(QSurfaceFormat.CoreProfile)
+        self.setFormat(fmt)
 
-    def update_animation(self):
-        self.time_val += 0.05
+    def set_show_b(self):
+        self.show_idx += 1
         self.update()
+
+    def load_texture(self, path: str) -> QOpenGLTexture:
+        img = QImage(path)
+        if img.isNull():
+            raise RuntimeError(f"画像を読み込めませんでした: {path}")
+        img = img.convertToFormat(QImage.Format_RGBA8888)
+
+        tex = QOpenGLTexture(QOpenGLTexture.Target2D)
+        tex.setData(img)
+        tex.setMinificationFilter(QOpenGLTexture.Linear)
+        tex.setMagnificationFilter(QOpenGLTexture.Linear)
+        tex.setWrapMode(QOpenGLTexture.ClampToEdge)
+        return tex
 
     def initializeGL(self):
-        # 多重継承の代わりにコンテキストから関数セットを取得する
-        self.gl = self.context().functions()
+        gl.glClearColor(0.15, 0.15, 0.15, 1.0)
 
-        # VAO/VBOを準備して、実際に描画できるようにする
-        self.vao = QOpenGLVertexArrayObject(self)
-        self.vao.create()
-        self.vao.bind()
-
-        self.vbo = QOpenGLBuffer(QOpenGLBuffer.VertexBuffer)
-        self.vbo.create()
-        self.vbo.bind()
-        vertex_array_type = ctypes.c_float * len(QUAD_VERTICES)
-        self.vbo.allocate(vertex_array_type(*QUAD_VERTICES), len(QUAD_VERTICES) * 4)
-
-        self.vao.release()
-
-        # ここでは initializeGL から呼ぶので makeCurrent/doneCurrent はしない
-        self._build_shader(INITIAL_FRAGMENT_SHADER, need_context_switch=False)
-
-    def set_fragment_shader_from_source(self, fragment_source: str):
-        """外部(ボタンクリックなど)から呼ばれる想定。ここではコンテキストを
-        明示的にcurrentにする必要がある。"""
-        self._build_shader(fragment_source, need_context_switch=True)
-
-    def _build_shader(self, fragment_source: str, need_context_switch: bool):
-        if need_context_switch:
-            self.makeCurrent()
-
-        new_program = QOpenGLShaderProgram(self)
-
-        if not new_program.addShaderFromSourceCode(QOpenGLShader.Vertex, VERTEX_SHADER):
-            print("Vertex shader error:", new_program.log())
-            if need_context_switch:
-                self.doneCurrent()
+        self.program = QOpenGLShaderProgram()
+        vtx_shader_path = Path("/Users/shiinaayame/Documents/ShellDelta/src/shell_delta/shaders/utils/vertex_shader.glsl")
+        frag_shader_path = Path("/Users/shiinaayame/Documents/ShellDelta/src/shell_delta/shaders/utils/alpha_blending.glsl")
+        if not vtx_shader_path.exists() or not frag_shader_path.exists():
+            return
+        with open(vtx_shader_path, "r", encoding="utf-8") as f:
+            vertex_shader = f.read()
+        with open(frag_shader_path, "r", encoding="utf-8") as f:
+            fragment_shader = f.read()
+        self.program.addShaderFromSourceCode(QOpenGLShader.Vertex, vertex_shader)
+        self.program.addShaderFromSourceCode(QOpenGLShader.Fragment, fragment_shader)
+        if not self.program.link():
+            QMessageBox.critical(self, "シェーダエラー", self.program.log())
+            QApplication.instance().quit()
             return
 
-        if not new_program.addShaderFromSourceCode(QOpenGLShader.Fragment, fragment_source):
-            print("Fragment shader compilation error:", new_program.log())
-            if need_context_switch:
-                self.doneCurrent()
-            return
+        vertices = np.array(
+            [
+                -1.0, -1.0, 0.0, 1.0,
+                 1.0, -1.0, 1.0, 1.0,
+                -1.0,  1.0, 0.0, 0.0,
+                 1.0, -1.0, 1.0, 1.0,
+                 1.0,  1.0, 1.0, 0.0,
+                -1.0,  1.0, 0.0, 0.0,
+            ],
+            dtype=np.float32,
+        )
 
-        if not new_program.link():
-            print("Shader link error:", new_program.log())
-            if need_context_switch:
-                self.doneCurrent()
-            return
+        self.vao = gl.glGenVertexArrays(1)
+        gl.glBindVertexArray(self.vao)
 
-        self.shader_program = new_program
+        self.vbo = gl.glGenBuffers(1)
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
+        gl.glBufferData(gl.GL_ARRAY_BUFFER, vertices.nbytes, vertices, gl.GL_STATIC_DRAW)
 
-        if need_context_switch:
-            self.doneCurrent()
+        stride = 4 * 4  # 4 floats * 4 bytes
+        gl.glVertexAttribPointer(0, 2, gl.GL_FLOAT, gl.GL_FALSE, stride, ctypes.c_void_p(0))
+        gl.glEnableVertexAttribArray(0)
+        gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, gl.GL_FALSE, stride, ctypes.c_void_p(8))
+        gl.glEnableVertexAttribArray(1)
 
-        self.update()
+        gl.glBindVertexArray(0)
+
+        # --- テクスチャ読み込み ---
+        try:
+            for p in self.paths:
+                self.tex.append(self.load_texture(p))
+        except RuntimeError as e:
+            QMessageBox.critical(self, "エラー", str(e))
+            QApplication.instance().quit()
 
     def resizeGL(self, w, h):
-        self.gl.glViewport(0, 0, w, h)
+        gl.glViewport(0, 0, max(w, 1), max(h, 1))
 
     def paintGL(self):
-        self.gl.glClearColor(0.1, 0.1, 0.1, 1.0)
-        self.gl.glClear(0x00004000)  # GL_COLOR_BUFFER_BIT
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+        self.program.bind()
 
-        if self.shader_program and self.shader_program.isLinked():
-            self.shader_program.bind()
-            self.shader_program.setUniformValue("u_time", self.time_val)
+        if self.tex:
+            img_w, img_h = self.tex[0].width(), self.tex[0].height()
+            widget_w, widget_h = max(self.width(), 1), max(self.height(), 1)
+            img_aspect = img_w / img_h if img_h else 1.0
+            widget_aspect = widget_w / widget_h if widget_h else 1.0
+            if widget_aspect > img_aspect:
+                scale_x, scale_y = img_aspect / widget_aspect, 1.0
+            else:
+                scale_x, scale_y = 1.0, widget_aspect / img_aspect
+        else:
+            scale_x, scale_y = 1.0, 1.0
+        self.program.setUniformValue("uScale", scale_x, scale_y)
 
-            self.vao.bind()
-            self.vbo.bind()
-            self.shader_program.enableAttributeArray(0)
-            self.shader_program.setAttributeBuffer(0, 0x1406, 0, 2, 0)  # GL_FLOAT
-            self.gl.glDrawArrays(0x0005, 0, 4)  # GL_TRIANGLE_STRIP
+        n = min(len(self.tex), MAX_LAYERS)  # self.textures: QOpenGLTextureのリスト
 
-            self.shader_program.disableAttributeArray(0)
-            self.vao.release()
-            self.shader_program.release()
+        unit_indices = []
+        enabled_flags = []
+        for i in range(MAX_LAYERS):
+            if i < n:
+                self.tex[i].bind(i)          # テクスチャユニット i にバインド(アクティブユニット切替も自動)
+                unit_indices.append(i)
+                enabled_flags.append(1 if self.show_idx >= i else 0)
+            else:
+                unit_indices.append(0)            # 未使用分はダミーで0番を指すだけ(enabled=0なので実際は参照されない)
+                enabled_flags.append(0)
+
+        self.program.setUniformValueArray("uLayers", unit_indices, MAX_LAYERS)
+        self.program.setUniformValueArray("uLayerEnabled", enabled_flags, MAX_LAYERS)
+        self.program.setUniformValue("uLayerCount", n)
+        self.program.setUniformValue("uBgColor", 0.15, 0.15, 0.15)
+
+        gl.glBindVertexArray(self.vao)
+        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
+        gl.glBindVertexArray(0)
+
+        for i in range(n):
+            self.tex[i].release()
+        self.program.release()
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, paths):
         super().__init__()
-        self.setWindowTitle("Shader Switcher Example")
-        self.resize(600, 400)
+        self.setWindowTitle("GLSL Alpha Blend Sample ")
 
-        central_widget = QWidget()
-        layout = QVBoxLayout(central_widget)
+        central = QWidget()
+        layout = QVBoxLayout(central)
 
-        self.opengl_widget = ShaderWidget()
-        layout.addWidget(self.opengl_widget)
+        self.gl_widget = GLWidget(paths=paths)
+        layout.addWidget(self.gl_widget, 1)
 
-        self.button = QPushButton("シェーダーを動的に変更 (アニメーション化)")
-        self.button.clicked.connect(self.change_shader)
+        self.button = QPushButton("画像Bを重ねる (OFF)")
+        self.button.setCheckable(True)
+        self.button.toggled.connect(self.on_toggle_b)
         layout.addWidget(self.button)
 
-        self.setCentralWidget(central_widget)
+        self.setCentralWidget(central)
+        self.resize(800, 600)
 
-    def change_shader(self):
-        self.opengl_widget.set_fragment_shader_from_source(NEW_FRAGMENT_SHADER)
-        self.button.setEnabled(False)
+    def on_toggle_b(self, checked: bool):
+        self.gl_widget.set_show_b()
+        self.button.setText(f"SHOW IDX : {self.gl_widget.show_idx}")
 
 
-if __name__ == "__main__":
-    # OpenGL 3.3 Core Profile を明示的に要求(環境によっては必須)
+def main():
+
+    paths = []
+    for i in range(1, len(sys.argv)):
+        paths.append(sys.argv[i])
+
     fmt = QSurfaceFormat()
     fmt.setVersion(3, 3)
     fmt.setProfile(QSurfaceFormat.CoreProfile)
     QSurfaceFormat.setDefaultFormat(fmt)
 
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = MainWindow(paths=paths)
     window.show()
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

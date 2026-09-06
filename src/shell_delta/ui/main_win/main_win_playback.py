@@ -5,12 +5,11 @@ import psutil
 
 from shell_delta.ui.render_dialog import RenderDialog
 from shell_delta.utils.editing_utils import EditingUtils
-from shell_delta.gb_var import get_gbvar_ctx
-from shell_delta.gb_var import get_gbvar_full
+from shell_delta import gb_var as gb_var_script
 from shell_delta import gb_var as gb_var_global
 
-gb_var = get_gbvar_ctx()
-gb_var_full = get_gbvar_full()
+gb_var = gb_var_script.get_gbvar_ctx()
+gb_var_full = gb_var_script.get_gbvar_full()
 
 class MainWinPlaybackMixin:
 
