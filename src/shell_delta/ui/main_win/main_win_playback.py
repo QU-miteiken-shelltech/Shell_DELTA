@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QPushButton, QDialog
 from PySide6.QtMultimedia import QVideoFrame
@@ -54,14 +56,17 @@ class MainWinPlaybackMixin:
         current_frame -= self.ref_frame_offset
         self.seq_idx = current_frame
         self.current_frame_label.setText(str(self.seq_idx))
-        actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx)
-        actual_filename = EditingUtils.get_actual_filepath(img_idx=actual_img_idx)
-        self.current_actual_img_idx_label.setText(str(actual_img_idx))
-        next_image_path = gb_var.sequence_root_dir / actual_filename
-        if not next_image_path.exists():
-            next_image_path = ""
+        next_image_paths = []
+        for l in range(0, len(gb_var_full.first_sequence_idx)):
+            actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx, layer=l)
+            actual_filename = EditingUtils.get_actual_filepath(img_idx=actual_img_idx, layer=l)
+            self.current_actual_img_idx_label.setText(str(actual_img_idx))
+            next_image_path = gb_var.sequence_root_dir / actual_filename
+            if not next_image_path.exists():
+                next_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
+            next_image_paths.append(str(next_image_path))
         self.gl_widget.change_image_onram(
-            next_image_paths=next_image_path
+            next_image_paths=next_image_paths
         )
 
 

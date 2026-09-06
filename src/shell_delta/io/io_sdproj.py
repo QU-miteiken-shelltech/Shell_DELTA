@@ -58,8 +58,6 @@ class IO_sdproj:
         }
         gb_var_full.initialize(init_data=data)
         from dataclasses import asdict
-        print(f"DATA *** {asdict(gb_var_full)}")
-        print(f"DATA2 *** {asdict(gb_var_script.get_gbvar_full())}")
 
     @classmethod
     def read_sdproj(cls,

@@ -30,7 +30,6 @@ class RenderVideo:
 
     def compose_video(self):
         time_map_dict = time_map.time_map
-        print(time_map_dict)
         writer = self.get_video_writer()
         idx_to_use = 0
         for i in range (self.export_range[0], self.export_range[1]+1):

@@ -28,24 +28,33 @@ class MainWinIOMixin:
         if not filename:
             return
         IO_sdproj.load_sdproj(reading_path=filename)
-        print(asdict(gb_var_full))
         self.seq_idx = 1
-        if gb_var.mata_filename is None:
+        if not gb_var_full.mata_filename:
             return
         self.inputting = False
-        actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx)
-        actual_filename = EditingUtils.get_actual_filepath(img_idx=actual_img_idx)
-        self.current_actual_img_idx_label.setText(str(actual_img_idx))
-        new_image_path = gb_var.sequence_root_dir / actual_filename
-        if not new_image_path.exists():
-            new_image_path = ""
+        new_image_paths = []
+        for l in range(0, len(gb_var_full.first_sequence_idx)):
+            actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx, layer=l)
+            actual_filename = EditingUtils.get_actual_filepath(img_idx=actual_img_idx, layer=l)
+            self.current_actual_img_idx_label.setText(str(actual_img_idx))
+            new_image_path = gb_var_full.sequence_root_dir[l] / actual_filename
+            if not new_image_path.exists():
+                new_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
+            new_image_paths.append(str(new_image_path))
         self.current_frame_label.setText(str(self.seq_idx))
         self.gl_widget.change_image(
-            new_image_paths=str(new_image_path)
+            new_image_paths=new_image_paths
             )
+
+        actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx, layer=0)
+        actual_filename = EditingUtils.get_actual_filepath(img_idx=actual_img_idx, layer=0)
+        new_image_path = gb_var.sequence_root_dir / actual_filename
+        if not new_image_path.exists():
+            new_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
         self.ref_gl_widget.change_image(
-            new_image_paths=str(new_image_path)
+            new_image_path=new_image_path
         )
+
         self.current_opened_label.setText(
             f"Working Sequence : {gb_var.sequence_root_dir / gb_var.mata_filename}"
             )
@@ -55,10 +64,6 @@ class MainWinIOMixin:
         cv2_videocap.release()
         self.fps_input_field.setText(str(self.ref_fps))
         self._show_expression_panel()
-        #DEBUG
-        print(asdict(gb_var_full))
-        print(asdict(gb_var))
-        #DEBUG
 
     def save_proj(self):
         if gb_var.saving_path is None:
@@ -70,7 +75,7 @@ class MainWinIOMixin:
         active_layer = gb_var.active_layer
         gb_var.write_to_main(active_layer=active_layer)
         writing_info = {
-            "base_frame_list" : EditingUtils.get_base_frames(),
+            "base_frame_list" : [EditingUtils.get_base_frames(layer=l) for l in range(0, len(gb_var_full.first_sequence_idx))],
             "time_map" : time_map.time_map,
             "sequence_root_dir" : [str(x) for x in gb_var_full.sequence_root_dir],
             "mata_filename" : gb_var_full.mata_filename,

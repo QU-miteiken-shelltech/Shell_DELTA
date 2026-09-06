@@ -4,7 +4,7 @@ import ctypes
 from pathlib import Path
 
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtGui import QImage, QSurfaceFormat
+from PySide6.QtGui import QImage, QSurfaceFormat, QOpenGLContext
 from PySide6.QtOpenGL import (
     QOpenGLTexture, QOpenGLShaderProgram, QOpenGLShader
 )
@@ -91,11 +91,13 @@ class OpenGLImageWidget(QOpenGLWidget):
         )
         GL.glBindVertexArray(0)
 
-        image = QImage(self.image_path).mirrored()
+        image_path = self.image_path if self.image_path else Path(__file__).resolve().parents[1] / "_resources" / "fallback.png"
+        image = QImage(image_path).mirrored()
         
         if not image.isNull():
             self.image_ratio = image.width() / image.height()
             texture = QOpenGLTexture(image)
+            texture.create()
             texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
             texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
             self.texture = [texture]
@@ -114,6 +116,7 @@ class OpenGLImageWidget(QOpenGLWidget):
                 continue
             self.image_ratio = image.width() / image.height()
             texture = QOpenGLTexture(image)
+            texture.create()
             texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
             texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
             textures.append(texture)
@@ -127,14 +130,17 @@ class OpenGLImageWidget(QOpenGLWidget):
             return
         new_image_paths = [str(x) for x in new_image_paths]
         self.makeCurrent()
+        print("CKPT_normal ctx:", id(QOpenGLContext.currentContext()))
+
         self.texture = self._load_textures(paths=new_image_paths)
         self.resizeGL(self.width(), self.height())
         self.doneCurrent()
-        self.update()
+        self.update()        
 
     def send_img_to_buffer(self):
         if self.ram_img_buffer:
             return
+        self.makeCurrent()
         img_idx_list = []
         for time_map_i in time_map.time_map:
             img_idx_list.append(list(set([int(v) for _, v in time_map_i.items()])))
@@ -142,7 +148,7 @@ class OpenGLImageWidget(QOpenGLWidget):
         for idx in range(0, len(img_idx_list)):
             img_idx_list_i = img_idx_list[idx]
             img_file_path_list.append([
-                str(gb_var.sequence_root_dir[idx] / EditingUtils.get_actual_filepath(img_idx=i)) 
+                str(gb_var_full.sequence_root_dir[idx] / EditingUtils.get_actual_filepath(img_idx=i, layer=idx)) 
                 for i in img_idx_list_i
             ])
 
@@ -155,10 +161,12 @@ class OpenGLImageWidget(QOpenGLWidget):
                 if not image.isNull():
                     asp_ratio = image.width() / image.height()
                     texture = QOpenGLTexture(image)
+                    texture.create()
                     texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
                     texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
                     ram_img_buffer_i[img_file_path] = (texture, asp_ratio)
             self.ram_img_buffer.append(ram_img_buffer_i)
+        self.doneCurrent()
 
 
     def change_image_onram(self,
@@ -170,12 +178,14 @@ class OpenGLImageWidget(QOpenGLWidget):
         try:
             self.texture = []
             for ram_img_buffer_i in self.ram_img_buffer:
-                buf = ram_img_buffer_i.get(next_image_paths, "")
+                buf = ram_img_buffer_i.get(
+                    next_image_paths, 
+                    str(Path(__file__).resolve().parents[1] / "_resources" / "fallback.png")
+                )
                 self.texture.append(buf[0])
                 self.image_ratio = buf[1]
             self.update()
         except:
-            print(next_image_paths)
             pass
 
     def release_buffer(self):
@@ -232,8 +242,9 @@ class OpenGLImageWidget(QOpenGLWidget):
                 unit_indicies.append(0)
                 enabled_flags.append(0)
 
-        self.program.setUniformValueArray("uLayers", unit_indicies, MAX_LAYERS)
-        self.program.setUniformValueArray("uLayerEnabled", enabled_flags, MAX_LAYERS)
+        for i in range(MAX_LAYERS):
+            self.program.setUniformValue(f"uLayer{i}", unit_indicies[i])
+            self.program.setUniformValue(f"uLayerEnabled{i}", enabled_flags[i])
         self.program.setUniformValue("uLayerCount", n)
         self.program.setUniformValue("uBgColor", 0.0, 0.0, 0.0)
 

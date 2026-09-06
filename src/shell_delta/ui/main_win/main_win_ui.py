@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
@@ -9,6 +11,7 @@ from PySide6.QtGui import QDoubleValidator, QIntValidator
 import psutil
 
 from shell_delta.ui.opengl import OpenGLImageWidget
+from shell_delta.ui.opengl_single import OpenGLImageSingleWidget
 from shell_delta.ui.expression_widgets import TCLExpressionWidget, CELExpressionWidget
 from shell_delta import gb_var as gb_var_script
 from shell_delta import gb_var as gb_var_global
@@ -51,7 +54,7 @@ class MainWinUIMixin:
         main_lo.addLayout(labels_lo)
 
         graphics_lo = QHBoxLayout()
-        self.gl_widget = OpenGLImageWidget("")
+        self.gl_widget = OpenGLImageWidget(str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png"))
         graphics_lo.addWidget(self.gl_widget, stretch=2)
 
         self.ref_player = QMediaPlayer()
@@ -67,7 +70,7 @@ class MainWinUIMixin:
         self.ref_video_widget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.ref_video_widget.customContextMenuRequested.connect(self.ref_ctx_menu)
 
-        self.ref_gl_widget = OpenGLImageWidget("")
+        self.ref_gl_widget = OpenGLImageSingleWidget(str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png"))
         self.ref_gl_widget.setObjectName("RefOpenGLWidget")
         graphics_sublo.addWidget(self.ref_gl_widget)
         graphics_lo.addLayout(graphics_sublo, stretch=1)

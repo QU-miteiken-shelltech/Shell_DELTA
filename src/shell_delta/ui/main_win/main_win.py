@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QApplication
 
@@ -55,10 +57,13 @@ class MainUserUi(QWidget,
                 return
             self.inputting = False
             time_map.time_map[time_map.active_layer][self.seq_idx] = int(self.input_frame_num_str)
-            actual_filename = EditingUtils.get_actual_filepath(img_idx=time_map.time_map[time_map.active_layer][self.seq_idx])
+            actual_filename = EditingUtils.get_actual_filepath(
+                img_idx=time_map.time_map[time_map.active_layer][self.seq_idx], 
+                layer=time_map.active_layer
+            )
             designated_image_path = gb_var.sequence_root_dir / actual_filename
             if not designated_image_path.exists():
-                designated_image_path = ""
+                designated_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
             self.input_frame_num_str = ""
             self.gl_widget.change_image(new_image_paths=designated_image_path)
         elif pressed in _move_seq_keys:
