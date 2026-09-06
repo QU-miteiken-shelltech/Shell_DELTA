@@ -41,7 +41,7 @@ class MainWinIOMixin:
             new_image_path = ""
         self.current_frame_label.setText(str(self.seq_idx))
         self.gl_widget.change_image(
-            new_image_path=str(new_image_path)
+            new_image_paths=str(new_image_path)
             )
         self.ref_gl_widget.change_image(
             new_image_path=str(new_image_path)
@@ -94,8 +94,8 @@ class MainWinIOMixin:
         matches = re.findall(r'\d+', filename)
         if len(matches) != 1:
             return
-        self.gl_widget.change_image(new_image_path=filename)
-        self.ref_gl_widget.change_image(new_image_path=filename)
+        self.gl_widget.change_image(new_image_paths=filename)
+        self.ref_gl_widget.change_image(new_image_paths=filename)
         gb_var.frame_notation_len = len(matches[0])
         gb_var.first_sequence_idx = int(matches[0])
         sharps = '#' * gb_var.frame_notation_len

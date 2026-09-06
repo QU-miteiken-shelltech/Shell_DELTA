@@ -37,11 +37,11 @@ class MainWinEventsMixin:
             new_image_path = ""
         if self.is_on_main_window:
             self.gl_widget.change_image(
-                new_image_path=str(new_image_path)
+                new_image_paths=str(new_image_path)
             )
         else:
             self.ref_gl_widget.change_image(
-                new_image_path=str(new_image_path)
+                new_image_paths=str(new_image_path)
             )
 
     def ref_ctx_menu(self, pos):

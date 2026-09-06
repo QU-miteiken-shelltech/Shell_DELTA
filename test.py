@@ -148,7 +148,7 @@ class GLWidget(QOpenGLWidget):
         self.program.setUniformValueArray("uLayers", unit_indices, MAX_LAYERS)
         self.program.setUniformValueArray("uLayerEnabled", enabled_flags, MAX_LAYERS)
         self.program.setUniformValue("uLayerCount", n)
-        self.program.setUniformValue("uBgColor", 0.15, 0.15, 0.15)
+        self.program.setUniformValue("uBgColor", 0.6, 0.15, 0.15)
 
         gl.glBindVertexArray(self.vao)
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)

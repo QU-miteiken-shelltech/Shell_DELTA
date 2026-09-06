@@ -1,9 +1,13 @@
 import gc
+import numpy
+import ctypes
 from pathlib import Path
 
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtGui import QImage
-from PySide6.QtOpenGL import QOpenGLTexture
+from PySide6.QtGui import QImage, QSurfaceFormat
+from PySide6.QtOpenGL import (
+    QOpenGLTexture, QOpenGLShaderProgram, QOpenGLShader
+)
 from OpenGL import GL
 
 from shell_delta.render import time_map
@@ -13,13 +17,23 @@ from shell_delta.utils.editing_utils import EditingUtils
 gb_var = gb_var_script.get_gbvar_ctx()
 gb_var_full = gb_var_script.get_gbvar_full()
 
+MAX_LAYERS : int = 8
+
 class OpenGLImageWidget(QOpenGLWidget):
-    def __init__(self, image_path, parent=None):
+    def __init__(self, image_path: list, parent=None):
         super().__init__(parent)
         self.image_path = image_path
-        self.texture = None
+        self.texture = []
         self.image_ratio = 1.0 
-        self.ram_img_buffer: dict[str, tuple[QOpenGLTexture, float]] = {}
+        self.program = None
+        self.vao = None
+        self.vbo = None
+        fmt = QSurfaceFormat()
+        fmt.setVersion(3, 3)
+        fmt.setProfile(QSurfaceFormat.CoreProfile)
+        self.setFormat(fmt)
+
+        self.ram_img_buffer: list[dict[str, tuple[QOpenGLTexture, float]]] = []
 
     def initializeGL(self):
         GL.glClearColor(0, 0, 0, 1.0)
@@ -27,42 +41,95 @@ class OpenGLImageWidget(QOpenGLWidget):
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
 
+        self.program = QOpenGLShaderProgram()
+        vtx_shader_path = Path(__file__).resolve().parents[1] / "shaders" / "utils" / "vertex_shader.glsl"
+        frag_shader_path = Path(__file__).resolve().parents[1] / "shaders" / "utils" / "alpha_blending.glsl"
+        if not vtx_shader_path.exists() or not frag_shader_path.exists():
+            return
+        with open(vtx_shader_path, "r", encoding="utf-8") as f:
+            vertex_shader = f.read()
+        with open(frag_shader_path, "r", encoding="utf-8") as f:
+            fragment_shader = f.read()
+        self.program.addShaderFromSourceCode(QOpenGLShader.Vertex, vertex_shader)
+        self.program.addShaderFromSourceCode(QOpenGLShader.Fragment, fragment_shader)
+        if not self.program.link():
+            print("shader_error")
+            return
+
+        vertices = numpy.array(
+            [
+                -1.0, -1.0, 0.0, 1.0,
+                1.0, -1.0, 1.0, 1.0,
+                -1.0,  1.0, 0.0, 0.0,
+                1.0, -1.0, 1.0, 1.0,
+                1.0,  1.0, 1.0, 0.0,
+                -1.0,  1.0, 0.0, 0.0,
+            ],
+            dtype=numpy.float32,
+        )
+
+        self.vao = GL.glGenVertexArrays(1)
+        GL.glBindVertexArray(self.vao)
+        self.vbo = GL.glGenBuffers(1)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo)
+        GL.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            vertices.nbytes,
+            vertices,
+            GL.GL_STATIC_DRAW
+        )
+        st = 4 * 4
+        GL.glVertexAttribPointer(
+            0, 2, 
+            GL.GL_FLOAT, GL.GL_FALSE, st, 
+            ctypes.c_void_p(0)
+        )
+        GL.glEnableVertexAttribArray(0)
+        GL.glVertexAttribPointer(
+            1, 2, 
+            GL.GL_FLOAT, GL.GL_FALSE, st, 
+            ctypes.c_void_p(8)
+        )
+        GL.glBindVertexArray(0)
+
+
         image = QImage(self.image_path).mirrored()
         
         if not image.isNull():
-            # 画像の縦横比を保存
             self.image_ratio = image.width() / image.height()
-            
-            self.texture = QOpenGLTexture(image)
-            self.texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
-            self.texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
+            texture = QOpenGLTexture(image)
+            texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
+            texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
+            self.texture = [texture]
 
-    def _load_texture(self, path):
-        """画像ファイルを読み込み、QOpenGLTexture を生成する内部関数"""
-        # 古いテクスチャが存在する場合は破棄してメモリ開放
+    def _load_textures(self, paths) -> list[QOpenGLTexture]:
         if self.texture:
-            self.texture.destroy()
-            self.texture = None
+            for i in range(0, len(self.texture)):
+                self.texture[i].destroy()
+            self.texture = []
 
-        image = QImage(path).mirrored()
-        if not image.isNull():
-            self.image_path = path
+        textures = []
+        self.image_path = paths
+        for p in paths:
+            image = QImage(p).mirrored()
+            if image.isNull():
+                continue
             self.image_ratio = image.width() / image.height()
-
-            # 新しいテクスチャを作成
-            self.texture = QOpenGLTexture(image)
-            self.texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
-            self.texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
+            texture = QOpenGLTexture(image)
+            texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
+            texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
+            textures.append(texture)
+        return textures
 
     def change_image(self, 
-                     new_image_path: str | Path
+                     new_image_paths: list[str] | list[Path]
                      ) -> None:
         if self.ram_img_buffer:
-            self.change_image_onram(next_image_path=new_image_path)
+            self.change_image_onram(next_image_path=new_image_paths)
             return
-        new_image_path = str(new_image_path)
+        new_image_paths = [str(x) for x in new_image_paths]
         self.makeCurrent()
-        self._load_texture(new_image_path)
+        self.texture = self._load_textures(paths=new_image_paths)
         self.resizeGL(self.width(), self.height())
         self.doneCurrent()
         self.update()
@@ -77,31 +144,37 @@ class OpenGLImageWidget(QOpenGLWidget):
         for idx in range(0, len(img_idx_list)):
             img_idx_list_i = img_idx_list[idx]
             img_file_path_list.append([
-                str(gb_var.sequence_root_dir / EditingUtils.get_actual_filepath(img_idx=i)) 
+                str(gb_var.sequence_root_dir[idx] / EditingUtils.get_actual_filepath(img_idx=i)) 
                 for i in img_idx_list_i
             ])
-        self.ram_img_buffer = {}
-        i = 0
-        for img_file_path in img_file_path_list[i]:
-            image = QImage(img_file_path).mirrored()
-            if not image.isNull():
-                asp_ratio = image.width() / image.height()
-                texture = QOpenGLTexture(image)
-                texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
-                texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
-                self.ram_img_buffer[img_file_path] = (texture, asp_ratio)
+
+        self.ram_img_buffer = []
+        for i in range(0, len(img_idx_list)):
+            ram_img_buffer_i = {}
+            j = 0
+            for img_file_path in img_file_path_list[i][j]:
+                image = QImage(img_file_path).mirrored()
+                if not image.isNull():
+                    asp_ratio = image.width() / image.height()
+                    texture = QOpenGLTexture(image)
+                    texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
+                    texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
+                    ram_img_buffer_i[img_file_path] = (texture, asp_ratio)
+            self.ram_img_buffer.append(ram_img_buffer_i)
 
 
     def change_image_onram(self,
-                           next_image_path: str | Path
+                           next_image_path: list[str] | list[Path]
                            ) -> None:
         if not self.ram_img_buffer:
             return
-        next_image_path = str(next_image_path)
+        next_image_path = [str(x) for x in next_image_path]
         try:
-            buf = self.ram_img_buffer.get(next_image_path, "")
-            self.texture = buf[0]
-            self.image_ratio = buf[1]
+            self.texture = []
+            for ram_img_buffer_i in self.ram_img_buffer:
+                buf = ram_img_buffer_i.get(next_image_path, "")
+                self.texture.append(buf[0])
+                self.image_ratio = buf[1]
             self.update()
         except:
             print(next_image_path)
@@ -111,7 +184,7 @@ class OpenGLImageWidget(QOpenGLWidget):
         if not self.ram_img_buffer:
             return
         self.ram_img_buffer.clear()
-        self.ram_img_buffer = {}
+        self.ram_img_buffer = []
         gc.collect()
         try:
             import platform
@@ -149,6 +222,36 @@ class OpenGLImageWidget(QOpenGLWidget):
 
         if not self.texture:
             return
+        
+        self.program.bind()
+
+        img_w, img_h = self.texture[0].width(), self.texture[0].height()
+        widget_w, widget_h = max(self.width(), 1), max(self.height(), 1)
+        img_aspect = img_w / img_h if img_h else 1.0
+        widget_aspect = widget_w / widget_h if widget_h else 1.0
+        if widget_aspect > img_aspect:
+            scale_x, scale_y = img_aspect / widget_aspect, 1.0
+        else:
+            scale_x, scale_y = 1.0, widget_aspect / img_aspect
+        self.program.setUniformValue("uScale", scale_x, scale_y)
+
+        n = min(len(self.texture), MAX_LAYERS)
+
+        unit_indicies = []
+        enabled_flags = []
+        for i in range(MAX_LAYERS):
+            if i < n:
+                self.texture[i].bind(i)
+                unit_indicies.append(i)
+                enabled_flags.append(1)
+            else:
+                unit_indicies.append(0)
+                enabled_flags.append(0)
+
+        self.program.setUniformValueArray("uLayers", unit_indicies, MAX_LAYERS)
+        self.program.setUniformValueArray("uLayerEnabled", enabled_flags, MAX_LAYERS)
+        self.program.setUniformValue("uLayerCount", n)
+        self.program.setUniformValue("uBgColor", 0.0, 0.0, 0.0)
 
         if not self.texture.isCreated() or self.texture.textureId() == 0:
             self.release_buffer()

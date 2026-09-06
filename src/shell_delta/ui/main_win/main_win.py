@@ -60,7 +60,7 @@ class MainUserUi(QWidget,
             if not designated_image_path.exists():
                 designated_image_path = ""
             self.input_frame_num_str = ""
-            self.gl_widget.change_image(new_image_path=designated_image_path)
+            self.gl_widget.change_image(new_image_paths=designated_image_path)
         elif pressed in _move_seq_keys:
             if pressed == Qt.Key.Key_Right:
                 if (modifier & Qt.KeyboardModifier.ShiftModifier):
