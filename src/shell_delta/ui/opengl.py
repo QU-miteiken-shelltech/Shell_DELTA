@@ -87,7 +87,6 @@ class OpenGLImageWidget(QOpenGLWidget):
                 texture.setMinificationFilter(QOpenGLTexture.Filter.Linear)
                 texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
                 self.ram_img_buffer[img_file_path] = (texture, asp_ratio)
-        print(len(self.ram_img_buffer))
 
 
     def change_image_onram(self,
