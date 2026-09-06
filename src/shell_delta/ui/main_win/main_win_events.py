@@ -33,6 +33,7 @@ class MainWinEventsMixin:
                 if not new_image_path.exists():
                     new_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
                 new_image_paths.append(str(new_image_path))
+            print(f"@@@@@{new_image_paths}")
             self.gl_widget.change_image(
                 new_image_paths=new_image_paths
             )

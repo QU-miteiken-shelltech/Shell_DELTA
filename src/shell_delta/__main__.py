@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication, QMainWindow
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QSurfaceFormat
 
 from shell_delta.ui.main_win.main_win import MainUserUi
 from shell_delta import gb_var as gb_var_script
@@ -10,6 +10,11 @@ from shell_delta import gb_var as gb_var_global
 import shell_delta.style as style
 
 def main():
+    fmt = QSurfaceFormat()
+    fmt.setVersion(3, 3)
+    fmt.setProfile(QSurfaceFormat.CoreProfile)
+    QSurfaceFormat.setDefaultFormat(fmt)
+
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("Shell DELTA")
     app.setApplicationName("Shell_DELTA")

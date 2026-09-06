@@ -22,11 +22,6 @@ class OpenGLImageSingleWidget(QOpenGLWidget):
         self.vao = None
         self.vbo = None
 
-        fmt = QSurfaceFormat()
-        fmt.setVersion(3, 3)
-        fmt.setProfile(QSurfaceFormat.CoreProfile)
-        self.setFormat(fmt)
-
     def initializeGL(self):
         GL.glClearColor(0, 0, 0, 1.0)
         GL.glEnable(GL.GL_BLEND)
@@ -84,7 +79,7 @@ class OpenGLImageSingleWidget(QOpenGLWidget):
         GL.glBindVertexArray(0)
 
         image_path = self.image_path if self.image_path else Path(__file__).resolve().parents[1] / "_resources" / "fallback.png"
-        image = QImage(image_path).mirrored()
+        image = QImage(image_path)
 
         if not image.isNull():
             self.image_ratio = image.width() / image.height()
@@ -98,7 +93,7 @@ class OpenGLImageSingleWidget(QOpenGLWidget):
             self.texture.destroy()
             self.texture = None
 
-        image = QImage(path).mirrored()
+        image = QImage(path)
         if not image.isNull():
             self.image_path = path
             self.image_ratio = image.width() / image.height()
@@ -149,9 +144,8 @@ class OpenGLImageSingleWidget(QOpenGLWidget):
         enabled_flags = [0] * MAX_LAYERS
         enabled_flags[0] = 1
 
-        for i in range(MAX_LAYERS):
-            self.program.setUniformValue(f"uLayer{i}", unit_indicies[i])
-            self.program.setUniformValue(f"uLayerEnabled{i}", enabled_flags[i])
+        self.program.setUniformValueArray("uLayers", unit_indicies, MAX_LAYERS)
+        self.program.setUniformValueArray("uLayerEnabled", enabled_flags, MAX_LAYERS)
         self.program.setUniformValue("uLayerCount", 1)
         self.program.setUniformValue("uBgColor", 0.0, 0.0, 0.0)
 

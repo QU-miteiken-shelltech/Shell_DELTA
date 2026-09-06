@@ -28,10 +28,6 @@ class OpenGLImageWidget(QOpenGLWidget):
         self.program = None
         self.vao = None
         self.vbo = None
-        fmt = QSurfaceFormat()
-        fmt.setVersion(3, 3)
-        fmt.setProfile(QSurfaceFormat.CoreProfile)
-        self.setFormat(fmt)
 
         self.ram_img_buffer: list[dict[str, tuple[QOpenGLTexture, float]]] = []
 
@@ -89,10 +85,11 @@ class OpenGLImageWidget(QOpenGLWidget):
             GL.GL_FLOAT, GL.GL_FALSE, st, 
             ctypes.c_void_p(8)
         )
+        GL.glEnableVertexAttribArray(1)
         GL.glBindVertexArray(0)
 
         image_path = self.image_path if self.image_path else Path(__file__).resolve().parents[1] / "_resources" / "fallback.png"
-        image = QImage(image_path).mirrored()
+        image = QImage(image_path)
         
         if not image.isNull():
             self.image_ratio = image.width() / image.height()
@@ -111,7 +108,7 @@ class OpenGLImageWidget(QOpenGLWidget):
         textures = []
         self.image_path = paths
         for p in paths:
-            image = QImage(p).mirrored()
+            image = QImage(p)
             if image.isNull():
                 continue
             self.image_ratio = image.width() / image.height()
@@ -157,7 +154,7 @@ class OpenGLImageWidget(QOpenGLWidget):
             ram_img_buffer_i = {}
             j = 0
             for img_file_path in img_file_path_list[i][j]:
-                image = QImage(img_file_path).mirrored()
+                image = QImage(img_file_path)
                 if not image.isNull():
                     asp_ratio = image.width() / image.height()
                     texture = QOpenGLTexture(image)
@@ -174,6 +171,8 @@ class OpenGLImageWidget(QOpenGLWidget):
                            ) -> None:
         if not self.ram_img_buffer:
             return
+        print(next_image_paths)
+        print("*****")
         next_image_paths = [str(x) for x in next_image_paths]
         try:
             self.texture = []
@@ -242,9 +241,8 @@ class OpenGLImageWidget(QOpenGLWidget):
                 unit_indicies.append(0)
                 enabled_flags.append(0)
 
-        for i in range(MAX_LAYERS):
-            self.program.setUniformValue(f"uLayer{i}", unit_indicies[i])
-            self.program.setUniformValue(f"uLayerEnabled{i}", enabled_flags[i])
+        self.program.setUniformValueArray("uLayers", unit_indicies, MAX_LAYERS)
+        self.program.setUniformValueArray("uLayerEnabled", enabled_flags, MAX_LAYERS)
         self.program.setUniformValue("uLayerCount", n)
         self.program.setUniformValue("uBgColor", 0.0, 0.0, 0.0)
 
