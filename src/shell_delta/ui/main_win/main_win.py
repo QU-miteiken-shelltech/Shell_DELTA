@@ -50,16 +50,21 @@ class MainUserUi(QWidget,
             Qt.Key.Key_8 : 8,
             Qt.Key.Key_9 : 9
         }
+        _layer_op_keys = [
+            Qt.Key.Key_U,
+            Qt.Key.Key_D,
+            Qt.Key.Key_H
+        ]
         pressed = event.key()
         modifier = event.modifiers()
         if pressed == Qt.Key.Key_Return:
             if not self.inputting:
                 return
             self.inputting = False
-            time_map.time_map[time_map.active_layer][self.seq_idx] = int(self.input_frame_num_str)
+            time_map.time_map[gb_var.active_layer][self.seq_idx] = int(self.input_frame_num_str)
             actual_filename = EditingUtils.get_actual_filepath(
-                img_idx=time_map.time_map[time_map.active_layer][self.seq_idx], 
-                layer=time_map.active_layer
+                img_idx=time_map.time_map[gb_var.active_layer][self.seq_idx], 
+                layer=gb_var.active_layer
             )
             self.input_frame_num_str = ""
 
@@ -86,6 +91,7 @@ class MainUserUi(QWidget,
                     self.move_sequence(is_foward=False, is_increment=True, increment_step=10)
                 else:
                     self.move_sequence(is_foward=False)
+
         elif pressed in _num_keys:
             if gb_var.mata_filename is None:
                 return
@@ -94,6 +100,19 @@ class MainUserUi(QWidget,
                 self.input_frame_num_str = ""
             self.input_frame_num_str += str(_num_keys[pressed])
             self.current_actual_img_idx_label.setText(self.input_frame_num_str)
+
+        elif pressed in _layer_op_keys :
+            if not self.layer_list.currentItem():
+                return
+            selected_item = self.layer_list.currentItem()
+            if pressed == Qt.Key.Key_U:
+                print("U")
+            elif pressed == Qt.Key.Key_D:
+                print("D")
+            if pressed == Qt.Key.Key_H:
+                selected_item_idx = self.layer_list.currentRow()
+                self.gl_widget.toggle_layer_visibility(layer_to_hide=selected_item_idx)
+            
 
     def mouseMoveEvent(self, event):
         widget_on = QApplication.widgetAt(event.globalPosition().toPoint())

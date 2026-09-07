@@ -3,6 +3,7 @@ from pathlib import Path
 from PySide6.QtWidgets import QMenu
 
 from shell_delta.utils.editing_utils import EditingUtils
+from shell_delta.render import time_map
 from shell_delta import gb_var as gb_var_script
 
 gb_var = gb_var_script.get_gbvar_ctx()
@@ -80,5 +81,6 @@ class MainWinEventsMixin:
         new_layer = self.layer_list.currentRow()
         print(new_layer)
         gb_var.switch_layer(new_layer)
-
+        seq = time_map.time_map[gb_var.active_layer][self.seq_idx]
+        self.current_actual_img_idx_label.setText(str(seq))
 

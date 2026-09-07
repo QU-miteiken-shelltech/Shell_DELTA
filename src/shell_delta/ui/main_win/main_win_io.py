@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 from dataclasses import dataclass, asdict
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QUrl, Qt
 from PySide6.QtWidgets import QFileDialog
 import cv2
 
@@ -67,6 +67,9 @@ class MainWinIOMixin:
         self.layer_list.clear()
         self.layer_list.addItems([str(i) for i in range(0, len(new_image_paths))])
         self.layer_list.setCurrentRow(0)
+        for i in range(0, self.layer_list.count()):
+            item = self.layer_list.item(i)
+            item.setFlags(item.flags() | Qt.ItemIsEditable)
 
     def save_proj(self):
         if gb_var.saving_path is None:
@@ -125,7 +128,7 @@ class MainWinIOMixin:
         ]
         for num in numbers:
             num = int(num)
-            time_map.time_map[time_map.active_layer][num] = num
+            time_map.time_map[gb_var.active_layer][num] = num
         gb_var.base_frame_list = EditingUtils.get_base_frames()
 
 

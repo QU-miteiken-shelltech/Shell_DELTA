@@ -24,6 +24,7 @@ class OpenGLImageWidget(QOpenGLWidget):
         super().__init__(parent)
         self.image_path = image_path
         self.texture = []
+        self.visibility_setting = [1] * MAX_LAYERS
         self.image_ratio = 1.0 
         self.size_standard_idx = 0
         self.program = None
@@ -128,8 +129,6 @@ class OpenGLImageWidget(QOpenGLWidget):
             return
         new_image_paths = [str(x) for x in new_image_paths]
         self.makeCurrent()
-        print("CKPT_normal ctx:", id(QOpenGLContext.currentContext()))
-
         self.texture = self._load_textures(paths=new_image_paths)
         self.resizeGL(self.width(), self.height())
         self.doneCurrent()
@@ -206,6 +205,9 @@ class OpenGLImageWidget(QOpenGLWidget):
         self.size_standard_idx = new_idx
         self.update()
 
+    def toggle_layer_visibility(self, layer_to_hide: int):
+        self.visibility_setting[layer_to_hide] = int(not self.visibility_setting[layer_to_hide])
+        self.update()
 
     def resizeGL(self, w, h):
         GL.glViewport(0, 0, w, h)
@@ -250,7 +252,7 @@ class OpenGLImageWidget(QOpenGLWidget):
                 enabled_flags.append(0)
 
         self.program.setUniformValueArray("uLayers", unit_indicies, MAX_LAYERS)
-        self.program.setUniformValueArray("uLayerEnabled", enabled_flags, MAX_LAYERS)
+        self.program.setUniformValueArray("uLayerEnabled", [a & b for a, b in zip(self.visibility_setting, enabled_flags)], MAX_LAYERS)
         self.program.setUniformValue("uLayerCount", n)
         self.program.setUniformValue("uBgColor", 0.0, 0.0, 0.0)
 
