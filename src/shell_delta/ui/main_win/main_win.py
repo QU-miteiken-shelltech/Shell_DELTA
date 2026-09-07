@@ -61,11 +61,20 @@ class MainUserUi(QWidget,
                 img_idx=time_map.time_map[time_map.active_layer][self.seq_idx], 
                 layer=time_map.active_layer
             )
-            designated_image_path = gb_var.sequence_root_dir / actual_filename
-            if not designated_image_path.exists():
-                designated_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
             self.input_frame_num_str = ""
-            self.gl_widget.change_image(new_image_paths=designated_image_path)
+
+            new_image_paths = []
+            for l in range(0, len(gb_var_full.first_sequence_idx)):
+                actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx, layer=l)
+                actual_filename = EditingUtils.get_actual_filepath(img_idx=actual_img_idx, layer=l)
+                self.current_actual_img_idx_label.setText(str(actual_img_idx))
+                self.current_frame_label.setText(str(self.seq_idx))
+                new_image_path = gb_var_full.sequence_root_dir[l] / actual_filename
+                if not new_image_path.exists():
+                    new_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
+                new_image_paths.append(str(new_image_path))
+            self.gl_widget.change_image(new_image_paths=new_image_paths)
+
         elif pressed in _move_seq_keys:
             if pressed == Qt.Key.Key_Right:
                 if (modifier & Qt.KeyboardModifier.ShiftModifier):

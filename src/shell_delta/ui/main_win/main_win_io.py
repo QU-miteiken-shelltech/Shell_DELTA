@@ -64,6 +64,9 @@ class MainWinIOMixin:
         cv2_videocap.release()
         self.fps_input_field.setText(str(self.ref_fps))
         self._show_expression_panel()
+        self.layer_list.clear()
+        self.layer_list.addItems([str(i) for i in range(0, len(new_image_paths))])
+        self.layer_list.setCurrentRow(0)
 
     def save_proj(self):
         if gb_var.saving_path is None:
@@ -124,6 +127,7 @@ class MainWinIOMixin:
             num = int(num)
             time_map.time_map[time_map.active_layer][num] = num
         gb_var.base_frame_list = EditingUtils.get_base_frames()
+
 
     def open_reference(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open Sequence", "", "Video (*.mp4)")

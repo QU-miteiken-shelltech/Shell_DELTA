@@ -25,6 +25,7 @@ class OpenGLImageWidget(QOpenGLWidget):
         self.image_path = image_path
         self.texture = []
         self.image_ratio = 1.0 
+        self.size_standard_idx = 0
         self.program = None
         self.vao = None
         self.vbo = None
@@ -201,6 +202,10 @@ class OpenGLImageWidget(QOpenGLWidget):
         except Exception:
             pass
 
+    def switch_size_standard(self, new_idx: int):
+        self.size_standard_idx = new_idx
+        self.update()
+
 
     def resizeGL(self, w, h):
         GL.glViewport(0, 0, w, h)
@@ -213,7 +218,10 @@ class OpenGLImageWidget(QOpenGLWidget):
         
         self.program.bind()
 
-        img_w, img_h = self.texture[0].width(), self.texture[0].height()
+        if self.size_standard_idx >= len(self.texture):
+            self.size_standard_idx = 0
+        img_w = self.texture[self.size_standard_idx].width()
+        img_h = self.texture[self.size_standard_idx].height()
         widget_w, widget_h = max(self.width(), 1), max(self.height(), 1)
         img_aspect = img_w / img_h if img_h else 1.0
         widget_aspect = widget_w / widget_h if widget_h else 1.0

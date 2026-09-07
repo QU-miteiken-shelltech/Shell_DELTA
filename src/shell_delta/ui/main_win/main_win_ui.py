@@ -2,8 +2,9 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-    QLineEdit, QComboBox, QStackedWidget
+    QVBoxLayout, QHBoxLayout, QPushButton, 
+    QLabel, QLineEdit, QComboBox, 
+    QStackedWidget, QListWidget
 )
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
@@ -54,6 +55,12 @@ class MainWinUIMixin:
         main_lo.addLayout(labels_lo)
 
         graphics_lo = QHBoxLayout()
+
+        self.layer_list = QListWidget()
+        self.layer_list.setFixedWidth(30)
+        self.layer_list.currentItemChanged.connect(self.switch_active_layer)
+        graphics_lo.addWidget(self.layer_list)
+
         self.gl_widget = OpenGLImageWidget(str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png"))
         graphics_lo.addWidget(self.gl_widget, stretch=2)
 

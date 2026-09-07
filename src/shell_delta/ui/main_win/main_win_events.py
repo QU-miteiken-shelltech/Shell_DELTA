@@ -18,13 +18,15 @@ class MainWinEventsMixin:
         if not gb_var_full.mata_filename:
             return
         self.inputting = False
+
+        if is_increment:
+            self.seq_idx += increment_step if is_foward else -increment_step
+        else:
+            self.seq_idx = int(self.current_frame_label.text())
+
         if self.is_on_main_window:
             new_image_paths = []
             for l in range(0, len(gb_var_full.first_sequence_idx)):
-                if is_increment:
-                    self.seq_idx += increment_step if is_foward else -increment_step
-                else:
-                    self.seq_idx = int(self.current_frame_label.text())
                 actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx, layer=l)
                 actual_filename = EditingUtils.get_actual_filepath(img_idx=actual_img_idx, layer=l)
                 self.current_actual_img_idx_label.setText(str(actual_img_idx))
@@ -33,15 +35,10 @@ class MainWinEventsMixin:
                 if not new_image_path.exists():
                     new_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
                 new_image_paths.append(str(new_image_path))
-            print(f"@@@@@{new_image_paths}")
             self.gl_widget.change_image(
                 new_image_paths=new_image_paths
             )
         else:
-            if is_increment:
-                self.ref_seq_idx += increment_step if is_foward else -increment_step
-            else:
-                self.ref_seq_idx = int(self.current_frame_label.text())
             self.ref_seq_idx_label.setText(str(self.ref_seq_idx))
             actual_filename = EditingUtils.get_actual_filepath(img_idx=self.ref_seq_idx, layer=gb_var.active_layer)
             new_image_path = gb_var.sequence_root_dir / actual_filename
@@ -62,6 +59,26 @@ class MainWinEventsMixin:
             lambda: setattr(gb_var, 'ref_video_start', 0)
         )
 
-
         menu.exec_(self.ref_video_widget.mapToGlobal(pos))
+
+    def layer_ctx_menu(self, pos):
+        menu = QMenu(self.layer_list)
+        action_01 = menu.addAction("Set to size reference")
+        action_01.triggered.connect(
+            lambda: self.gl_widget.switch_size_standard(
+                new_idx=self.layer_list.currentRow()
+            )
+        )
+        action_02 = menu.addAction("Set to active layer")
+        action_02.triggered.connect(
+            lambda: gb_var.switch_layer(
+                active_layer=self.layer_list.currentRow()
+            )
+        )
+
+    def switch_active_layer(self):
+        new_layer = self.layer_list.currentRow()
+        print(new_layer)
+        gb_var.switch_layer(new_layer)
+
 
