@@ -15,17 +15,30 @@ styles = {
 style_script: Any = dark_default
 
 IS_CONFIGED: bool = False
+MAX_LAYER: int = 8
+
+class SequenceList(list):
+    def __getitem__(self, index):
+        layer_order = get_gbvar_full().layer_order
+        if isinstance(index, slice):
+            return super().__getitem__()
+        return [super().__getitem__(layer_order[i]) for i in layer_order[index]]
+
+    def __setitem__(self, index, value):
+        layer_order = get_gbvar_full().layer_order
+        super().__setitem__(layer_order[index], value)
 
 @dataclass
 class GBVar:
-    base_frame_list : list[list[int]] = field(default_factory=lambda: [[]])
-    sequence_root_dir : list[Path] = field(default_factory=list)
-    mata_filename : list[str] = field(default_factory=list)
-    first_sequence_idx : list[int] = field(default_factory=list)
-    frame_notation_len : list[int] = field(default_factory=list)
+    base_frame_list : list[list[int]] = field(default_factory=lambda: SequenceList([[]]))
+    sequence_root_dir : list[Path] = field(default_factory=SequenceList)
+    mata_filename : list[str] = field(default_factory=SequenceList)
+    first_sequence_idx : list[int] = field(default_factory=SequenceList)
+    frame_notation_len : list[int] = field(default_factory=SequenceList)
     saving_path : Path | None = None
     ref_path: Path | None = None
     ref_video_start: int = 0
+    layer_order: list[int] = field(default_factory=list)
 
     _instance: Optional["GBVar"] = None
 
@@ -34,6 +47,9 @@ class GBVar:
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
+
+    def __post_init__(self):
+        self.layer_order = [i for i in range(0, MAX_LAYER)]
 
     def initialize(self, 
                    init_data: Optional[Dict[str, Any]]):
@@ -107,7 +123,7 @@ class GBVar_CTX:
                      do_write_back: bool=True):
         gbvar = GBVar.get_instance()
         if do_write_back:
-            self.write_to_main(active_layer=active_layer)
+            self.write_to_main(active_layer=self.active_layer)
         self.active_layer = active_layer
         self.base_frame_list = gbvar.base_frame_list[active_layer]
         self.sequence_root_dir = gbvar.sequence_root_dir[active_layer]
