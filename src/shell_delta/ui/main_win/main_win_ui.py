@@ -13,6 +13,7 @@ import psutil
 
 from shell_delta.ui.opengl import OpenGLImageWidget
 from shell_delta.ui.opengl_single import OpenGLImageSingleWidget
+from shell_delta.ui.layer_ui import LayerListWidget
 from shell_delta.ui.expression_widgets import TCLExpressionWidget, CELExpressionWidget
 from shell_delta import gb_var as gb_var_script
 from shell_delta import gb_var as gb_var_global
@@ -56,13 +57,14 @@ class MainWinUIMixin:
 
         graphics_lo = QHBoxLayout()
 
-        self.layer_list = QListWidget()
+        self.layer_list = LayerListWidget()
         self.layer_list.setFixedWidth(30)
         self.layer_list.currentItemChanged.connect(self.switch_active_layer)
         graphics_lo.addWidget(self.layer_list)
 
         self.gl_widget = OpenGLImageWidget(str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png"))
         graphics_lo.addWidget(self.gl_widget, stretch=2)
+        self.layer_list.opengl_widget = self.gl_widget
 
         self.ref_player = QMediaPlayer()
         self.ref_fps = 0.0

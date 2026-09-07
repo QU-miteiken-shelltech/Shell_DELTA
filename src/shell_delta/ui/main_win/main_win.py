@@ -53,7 +53,8 @@ class MainUserUi(QWidget,
         _layer_op_keys = [
             Qt.Key.Key_U,
             Qt.Key.Key_D,
-            Qt.Key.Key_H
+            Qt.Key.Key_H,
+            Qt.Key.Key_S,
         ]
         pressed = event.key()
         modifier = event.modifiers()
@@ -102,16 +103,42 @@ class MainUserUi(QWidget,
             self.current_actual_img_idx_label.setText(self.input_frame_num_str)
 
         elif pressed in _layer_op_keys :
-            if not self.layer_list.currentItem():
-                return
             selected_item = self.layer_list.currentItem()
+            if not selected_item:
+                return
+            selected_item_idx = self.layer_list.currentRow()
             if pressed == Qt.Key.Key_U:
-                print("U")
+                if selected_item_idx <= 0:
+                    return
+                self.layer_list.takeItem(selected_item_idx)
+                self.layer_list.insertItem(selected_item_idx - 1, selected_item)
+                layer_order = gb_var_full.layer_order
+                item = layer_order.pop(selected_item_idx)
+                layer_order.insert(selected_item_idx - 1,item)
+                gb_var_full.restack_layers(
+                    new_layer_order=layer_order,
+                    new_active_layer=selected_item_idx - 1
+                )
+                self.layer_list.setCurrentRow(selected_item_idx - 1)
             elif pressed == Qt.Key.Key_D:
-                print("D")
+                if selected_item_idx >= 7:
+                    return
+                self.layer_list.takeItem(selected_item_idx)
+                self.layer_list.insertItem(selected_item_idx + 1, selected_item)
+                layer_order = gb_var_full.layer_order
+                item = layer_order.pop(selected_item_idx)
+                layer_order.insert(selected_item_idx + 1,item)
+                gb_var_full.restack_layers(
+                    new_layer_order=layer_order,
+                    new_active_layer=selected_item_idx + 1
+                )
+                self.layer_list.setCurrentRow(selected_item_idx + 1)
+                
             if pressed == Qt.Key.Key_H:
-                selected_item_idx = self.layer_list.currentRow()
                 self.gl_widget.toggle_layer_visibility(layer_to_hide=selected_item_idx)
+
+            if pressed == Qt.Key.Key_S:
+                self.gl_widget.switch_size_standard(new_idx=selected_item_idx)
             
 
     def mouseMoveEvent(self, event):

@@ -75,6 +75,12 @@ class GBVar:
         
         return attr
 
+    def restack_layers(self, 
+                       new_layer_order: list[int],
+                       new_active_layer: int):
+        self.layer_order = new_layer_order
+        get_gbvar_ctx().switch_layer(new_active_layer=new_active_layer)
+
 
 @dataclass
 class GBVar_CTX:
@@ -119,21 +125,21 @@ class GBVar_CTX:
         gbvar.frame_notation_len[active_layer] = self.frame_notation_len
 
     def switch_layer(self, 
-                     active_layer: int, 
+                     new_active_layer: int, 
                      do_write_back: bool=True):
         gbvar = GBVar.get_instance()
         if do_write_back:
             self.write_to_main(active_layer=self.active_layer)
-        self.active_layer = active_layer
-        self.base_frame_list = gbvar.base_frame_list[active_layer]
-        self.sequence_root_dir = gbvar.sequence_root_dir[active_layer]
-        self.mata_filename = gbvar.mata_filename[active_layer]
-        self.first_sequence_idx = gbvar.first_sequence_idx[active_layer]
-        self.frame_notation_len = gbvar.frame_notation_len[active_layer]
+        self.active_layer = new_active_layer
+        self.base_frame_list = gbvar.base_frame_list[new_active_layer]
+        self.sequence_root_dir = gbvar.sequence_root_dir[new_active_layer]
+        self.mata_filename = gbvar.mata_filename[new_active_layer]
+        self.first_sequence_idx = gbvar.first_sequence_idx[new_active_layer]
+        self.frame_notation_len = gbvar.frame_notation_len[new_active_layer]
 
     def initialize(self):
         gbvar = GBVar.get_instance()
-        self.switch_layer(active_layer=0, do_write_back=False)
+        self.switch_layer(new_active_layer=0, do_write_back=False)
         self.saving_path = gbvar.saving_path
         self.ref_path = gbvar.ref_path
         self.ref_video_start = gbvar.ref_video_start

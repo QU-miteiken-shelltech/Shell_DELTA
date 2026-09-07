@@ -57,15 +57,16 @@ class MainWinIOMixin:
 
         self.current_opened_label.setText(
             f"Working Sequence : {gb_var.sequence_root_dir / gb_var.mata_filename}"
-            )
+        )
         self.ref_player.setSource(QUrl.fromLocalFile(str(gb_var.ref_path)))
         cv2_videocap = cv2.VideoCapture(str(gb_var.ref_path))
         self.ref_fps = cv2_videocap.get(cv2.CAP_PROP_FPS) if cv2_videocap.isOpened() else 0.0
         cv2_videocap.release()
         self.fps_input_field.setText(str(self.ref_fps))
         self._show_expression_panel()
+
         self.layer_list.clear()
-        self.layer_list.addItems([str(i) for i in range(0, len(new_image_paths))])
+        self.layer_list.addItems([str(i) for i in gb_var_full.layer_order[0 : len(gb_var_full.first_sequence_idx)]])
         self.layer_list.setCurrentRow(0)
         for i in range(0, self.layer_list.count()):
             item = self.layer_list.item(i)
@@ -88,7 +89,8 @@ class MainWinIOMixin:
             "first_sequence_idx" : gb_var_full.first_sequence_idx,
             "frame_notation_len" : gb_var_full.frame_notation_len,
             "ref_video_start": gb_var_full.ref_video_start,
-            "ref_path" : str(gb_var_full.ref_path)
+            "ref_path" : str(gb_var_full.ref_path),
+            "layer_order" : [int(i) for i in gb_var_full.layer_order]
         }
         print(writing_info)
         IO_sdproj.write_sdproj(

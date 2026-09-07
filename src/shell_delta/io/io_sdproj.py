@@ -8,6 +8,8 @@ from shell_delta.render import time_map
 gb_var = gb_var_script.get_gbvar_ctx()
 gb_var_full = gb_var_script.get_gbvar_full()
 
+MAX_LAYER : int = 8
+
 class IO_sdproj:
     def __init__(self):
         pass
@@ -54,7 +56,8 @@ class IO_sdproj:
             "frame_notation_len" : current_sdproj.get("frame_notation_len", []),
             "ref_video_start" : current_sdproj.get("ref_video_start", 0),
             "ref_path" : Path(current_sdproj["ref_path"]) if "ref_path" in current_sdproj else None,
-            "saving_path" : Path(reading_path)
+            "saving_path" : Path(reading_path),
+            "layer_order" : current_sdproj.get("layer_order", [i for i in range(0, MAX_LAYER)])
         }
         gb_var_full.initialize(init_data=data)
         from dataclasses import asdict

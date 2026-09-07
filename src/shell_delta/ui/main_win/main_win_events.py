@@ -62,25 +62,12 @@ class MainWinEventsMixin:
 
         menu.exec_(self.ref_video_widget.mapToGlobal(pos))
 
-    def layer_ctx_menu(self, pos):
-        menu = QMenu(self.layer_list)
-        action_01 = menu.addAction("Set to size reference")
-        action_01.triggered.connect(
-            lambda: self.gl_widget.switch_size_standard(
-                new_idx=self.layer_list.currentRow()
-            )
-        )
-        action_02 = menu.addAction("Set to active layer")
-        action_02.triggered.connect(
-            lambda: gb_var.switch_layer(
-                active_layer=self.layer_list.currentRow()
-            )
-        )
-
     def switch_active_layer(self):
         new_layer = self.layer_list.currentRow()
-        print(new_layer)
-        gb_var.switch_layer(new_layer)
+        gb_var.switch_layer(new_active_layer=new_layer)
         seq = time_map.time_map[gb_var.active_layer][self.seq_idx]
         self.current_actual_img_idx_label.setText(str(seq))
+        self.current_opened_label.setText(
+            f"Working Sequence : {gb_var.sequence_root_dir / gb_var.mata_filename}"
+        )
 
