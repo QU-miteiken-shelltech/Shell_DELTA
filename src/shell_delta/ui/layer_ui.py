@@ -58,7 +58,21 @@ class LayerListWidget(QListWidget):
             elif pressed == Qt.Key.Key_H:
                 if self.opengl_widget is None:
                     return
-                self.opengl_widget.toggle_layer_visibility(layer_to_hide=selected_item_idx)
+                if (modifier & Qt.KeyboardModifier.ShiftModifier):
+                    self.opengl_widget.toggle_layer_visibility(
+                        target_layer=selected_item_idx,
+                        mode=2
+                    )
+                elif (modifier & Qt.KeyboardModifier.AltModifier):
+                    self.opengl_widget.toggle_layer_visibility(
+                        target_layer=selected_item_idx,
+                        mode=3
+                    )
+                else:
+                    self.opengl_widget.toggle_layer_visibility(
+                        target_layer=selected_item_idx,
+                        mode=1
+                    )
 
             elif pressed == Qt.Key.Key_S:
                 if self.opengl_widget is None:

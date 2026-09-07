@@ -107,35 +107,60 @@ class MainUserUi(QWidget,
             if not selected_item:
                 return
             selected_item_idx = self.layer_list.currentRow()
-            if pressed == Qt.Key.Key_U:
-                if selected_item_idx <= 0:
-                    return
-                self.layer_list.takeItem(selected_item_idx)
-                self.layer_list.insertItem(selected_item_idx - 1, selected_item)
-                layer_order = gb_var_full.layer_order
-                item = layer_order.pop(selected_item_idx)
-                layer_order.insert(selected_item_idx - 1,item)
-                gb_var_full.restack_layers(
-                    new_layer_order=layer_order,
-                    new_active_layer=selected_item_idx - 1
-                )
-                self.layer_list.setCurrentRow(selected_item_idx - 1)
-            elif pressed == Qt.Key.Key_D:
-                if selected_item_idx >= 7:
-                    return
-                self.layer_list.takeItem(selected_item_idx)
-                self.layer_list.insertItem(selected_item_idx + 1, selected_item)
-                layer_order = gb_var_full.layer_order
-                item = layer_order.pop(selected_item_idx)
-                layer_order.insert(selected_item_idx + 1,item)
-                gb_var_full.restack_layers(
-                    new_layer_order=layer_order,
-                    new_active_layer=selected_item_idx + 1
-                )
-                self.layer_list.setCurrentRow(selected_item_idx + 1)
-                
+            if (modifier & Qt.KeyboardModifier.ShiftModifier):
+                if pressed == Qt.Key.Key_U:
+                    if selected_item_idx <= 0:
+                        return
+                    self.layer_list.takeItem(selected_item_idx)
+                    self.layer_list.insertItem(selected_item_idx - 1, selected_item)
+                    layer_order = gb_var_full.layer_order
+                    item = layer_order.pop(selected_item_idx)
+                    layer_order.insert(selected_item_idx - 1,item)
+                    gb_var_full.restack_layers(
+                        new_layer_order=layer_order,
+                        new_active_layer=selected_item_idx - 1
+                    )
+                    self.layer_list.setCurrentRow(selected_item_idx - 1)
+                elif pressed == Qt.Key.Key_D:
+                    if selected_item_idx >= self.layer_list.count() - 1:
+                        return
+                    self.layer_list.takeItem(selected_item_idx)
+                    self.layer_list.insertItem(selected_item_idx + 1, selected_item)
+                    layer_order = gb_var_full.layer_order
+                    item = layer_order.pop(selected_item_idx)
+                    layer_order.insert(selected_item_idx + 1,item)
+                    gb_var_full.restack_layers(
+                        new_layer_order=layer_order,
+                        new_active_layer=selected_item_idx + 1
+                    )
+                    self.layer_list.setCurrentRow(selected_item_idx + 1)
+            else:
+                if pressed == Qt.Key.Key_U:
+                    if selected_item_idx <= 0:
+                        return
+                    self.layer_list.setCurrentRow(selected_item_idx - 1)
+                elif pressed == Qt.Key.Key_D:
+                    if selected_item_idx >= self.layer_list.count() - 1:
+                        return
+                    self.layer_list.setCurrentRow(selected_item_idx + 1)
+
+
             if pressed == Qt.Key.Key_H:
-                self.gl_widget.toggle_layer_visibility(layer_to_hide=selected_item_idx)
+                if (modifier & Qt.KeyboardModifier.ShiftModifier):
+                    self.gl_widget.toggle_layer_visibility(
+                        target_layer=selected_item_idx,
+                        mode=2
+                    )
+                elif (modifier & Qt.KeyboardModifier.AltModifier):
+                    self.gl_widget.toggle_layer_visibility(
+                        target_layer=selected_item_idx,
+                        mode=3
+                    )
+                else:
+                    self.gl_widget.toggle_layer_visibility(
+                        target_layer=selected_item_idx,
+                        mode=1
+                    )
 
             if pressed == Qt.Key.Key_S:
                 self.gl_widget.switch_size_standard(new_idx=selected_item_idx)

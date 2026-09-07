@@ -205,8 +205,22 @@ class OpenGLImageWidget(QOpenGLWidget):
         self.size_standard_idx = new_idx
         self.update()
 
-    def toggle_layer_visibility(self, layer_to_hide: int):
-        self.visibility_setting[layer_to_hide] = int(not self.visibility_setting[layer_to_hide])
+    def toggle_layer_visibility(self, 
+                                target_layer: int,
+                                mode: int=1
+                                ) -> None:
+        # 1: toggle 2: hide all except selected 3: show all
+        if mode == 1:
+            self.visibility_setting[target_layer] = int(not self.visibility_setting[target_layer])
+        elif mode == 2:
+            if self.visibility_setting[target_layer] == 0:
+                self.visibility_setting = [0] * MAX_LAYERS
+                self.visibility_setting[target_layer] = 1 
+            else:
+                self.visibility_setting = [1] * MAX_LAYERS
+                self.visibility_setting[target_layer] = 0  
+        else:
+            self.visibility_setting = [1] * MAX_LAYERS
         self.update()
 
     def resizeGL(self, w, h):

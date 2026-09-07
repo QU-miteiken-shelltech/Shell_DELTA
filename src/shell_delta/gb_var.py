@@ -20,6 +20,7 @@ MAX_LAYER: int = 8
 class SequenceList(list):
     def __getitem__(self, index):
         layer_order = get_gbvar_full().layer_order
+        print(f"***** ; {layer_order}")
         if isinstance(index, slice):
             return super().__getitem__()
         return [super().__getitem__(layer_order[i]) for i in layer_order[index]]
