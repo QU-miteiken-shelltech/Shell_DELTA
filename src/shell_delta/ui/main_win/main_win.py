@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QApplication
 
@@ -73,8 +74,6 @@ class MainUserUi(QWidget,
             for l in range(0, len(gb_var_full.first_sequence_idx)):
                 actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx, layer=l)
                 actual_filename = EditingUtils.get_actual_filepath(img_idx=actual_img_idx, layer=l)
-                self.current_actual_img_idx_label.setText(str(actual_img_idx))
-                self.current_frame_label.setText(str(self.seq_idx))
                 new_image_path = gb_var_full.sequence_root_dir[l] / actual_filename
                 if not new_image_path.exists():
                     new_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
@@ -121,19 +120,24 @@ class MainUserUi(QWidget,
                         new_active_layer=selected_item_idx - 1
                     )
                     self.layer_list.setCurrentRow(selected_item_idx - 1)
+                    # self.gl_widget.update()
                 elif pressed == Qt.Key.Key_D:
                     if selected_item_idx >= self.layer_list.count() - 1:
                         return
                     self.layer_list.takeItem(selected_item_idx)
                     self.layer_list.insertItem(selected_item_idx + 1, selected_item)
+                    print(f"selected_item_idx : {selected_item_idx}")
                     layer_order = gb_var_full.layer_order
+                    print(f"layer_order : {layer_order}")
                     item = layer_order.pop(selected_item_idx)
                     layer_order.insert(selected_item_idx + 1,item)
+                    print(f"layer_order_2 : {gb_var_full.layer_order}")
                     gb_var_full.restack_layers(
                         new_layer_order=layer_order,
                         new_active_layer=selected_item_idx + 1
                     )
                     self.layer_list.setCurrentRow(selected_item_idx + 1)
+                    # self.gl_widget.update()
             else:
                 if pressed == Qt.Key.Key_U:
                     if selected_item_idx <= 0:

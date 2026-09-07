@@ -65,7 +65,8 @@ class MainWinEventsMixin:
     def switch_active_layer(self):
         new_layer = self.layer_list.currentRow()
         gb_var.switch_layer(new_active_layer=new_layer)
-        seq = time_map.time_map[gb_var.active_layer][self.seq_idx]
+        actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx, layer=gb_var.active_layer)
+        seq = time_map.time_map[gb_var.active_layer][actual_img_idx]
         self.current_actual_img_idx_label.setText(str(seq))
         self.current_opened_label.setText(
             f"Working Sequence : {gb_var.sequence_root_dir / gb_var.mata_filename}"

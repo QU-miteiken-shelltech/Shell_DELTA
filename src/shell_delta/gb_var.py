@@ -2,6 +2,9 @@ from pathlib import Path
 from dataclasses import dataclass, field, fields
 from typing import Optional, Dict, Any
 
+import numpy
+
+from shell_delta.render import time_map
 from shell_delta.style import (
     dark_default, pure_skyblue,
     kawaii_pink, elegant_light
@@ -17,25 +20,13 @@ style_script: Any = dark_default
 IS_CONFIGED: bool = False
 MAX_LAYER: int = 8
 
-class SequenceList(list):
-    def __getitem__(self, index):
-        layer_order = get_gbvar_full().layer_order
-        print(f"***** ; {layer_order}")
-        if isinstance(index, slice):
-            return super().__getitem__()
-        return [super().__getitem__(layer_order[i]) for i in layer_order[index]]
-
-    def __setitem__(self, index, value):
-        layer_order = get_gbvar_full().layer_order
-        super().__setitem__(layer_order[index], value)
-
 @dataclass
 class GBVar:
-    base_frame_list : list[list[int]] = field(default_factory=lambda: SequenceList([[]]))
-    sequence_root_dir : list[Path] = field(default_factory=SequenceList)
-    mata_filename : list[str] = field(default_factory=SequenceList)
-    first_sequence_idx : list[int] = field(default_factory=SequenceList)
-    frame_notation_len : list[int] = field(default_factory=SequenceList)
+    base_frame_list : list[list[int]] = field(default_factory=lambda: list([[]]))
+    sequence_root_dir : list[Path] = field(default_factory=list)
+    mata_filename : list[str] = field(default_factory=list)
+    first_sequence_idx : list[int] = field(default_factory=list)
+    frame_notation_len : list[int] = field(default_factory=list)
     saving_path : Path | None = None
     ref_path: Path | None = None
     ref_video_start: int = 0
@@ -47,10 +38,8 @@ class GBVar:
     def get_instance(cls) -> "GBVar":
         if cls._instance is None:
             cls._instance = cls()
+            cls._instance.layer_order = [i for i in range(0, MAX_LAYER)]
         return cls._instance
-
-    def __post_init__(self):
-        self.layer_order = [i for i in range(0, MAX_LAYER)]
 
     def initialize(self, 
                    init_data: Optional[Dict[str, Any]]):
@@ -79,8 +68,32 @@ class GBVar:
     def restack_layers(self, 
                        new_layer_order: list[int],
                        new_active_layer: int):
+        print(f"before : {self.layer_order}")
+        print(f"new order: {new_layer_order}")
         self.layer_order = new_layer_order
+        print(f"after: {self.layer_order}")
+        for field in fields(self):
+            name = field.name
+            val = getattr(self, name)
+            if isinstance(val, list):
+                setattr(
+                    self, name, 
+                    numpy.array(val, dtype=object)[self.layer_order[:len(val)]].tolist()
+                )
+        current_time_map = time_map.time_map
+        time_map.time_map = numpy.array(current_time_map, dtype=object)[self.layer_order[:len(current_time_map)]].tolist()
         get_gbvar_ctx().switch_layer(new_active_layer=new_active_layer)
+
+    def append_info(self,
+                    new_info: dict):
+        for field in fields(self):
+            name = field.namev
+            val = getattr(self, name)
+            if name in new_info and isinstance(val, list):
+                val.append(new_info[name])
+                setattr(self, name, val)
+            
+
 
 
 @dataclass

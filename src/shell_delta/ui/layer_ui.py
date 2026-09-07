@@ -39,8 +39,8 @@ class LayerListWidget(QListWidget):
                     new_layer_order=layer_order,
                     new_active_layer=selected_item_idx - 1
                 )
-                self.layer_list.setCurrentRow(selected_item_idx - 1)
-
+                self.setCurrentRow(selected_item_idx - 1)
+                self.opengl_widget.update()
             elif pressed == Qt.Key.Key_D:
                 if selected_item_idx >= self.count() - 1:
                     return
@@ -53,8 +53,9 @@ class LayerListWidget(QListWidget):
                     new_layer_order=layer_order,
                     new_active_layer=selected_item_idx + 1
                 )
-                self.layer_list.setCurrentRow(selected_item_idx + 1)
-
+                self.setCurrentRow(selected_item_idx + 1)
+                self.opengl_widget.update()
+                
             elif pressed == Qt.Key.Key_H:
                 if self.opengl_widget is None:
                     return

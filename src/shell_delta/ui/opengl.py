@@ -4,7 +4,7 @@ import ctypes
 from pathlib import Path
 
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtGui import QImage, QSurfaceFormat, QOpenGLContext
+from PySide6.QtGui import QImage
 from PySide6.QtOpenGL import (
     QOpenGLTexture, QOpenGLShaderProgram, QOpenGLShader
 )
@@ -231,6 +231,7 @@ class OpenGLImageWidget(QOpenGLWidget):
 
         if not self.texture:
             return
+        self.texture = self.texture[::-1]
         
         self.program.bind()
 
