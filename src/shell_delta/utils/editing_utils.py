@@ -40,8 +40,12 @@ class EditingUtils:
         root_dir = Path(gb_var_full.sequence_root_dir[layer])
         if root_dir is None or not root_dir.exists():
             return
+        template = gb_var_full.mata_filename[layer]
+        print(f"template - {template}")
+        placeholder_template = re.sub(r"#+", "___DIGIT_PLACEHOLDER___", template)
+        escaped_template = re.escape(placeholder_template)
         escaped_template = re.escape(gb_var_full.mata_filename[layer])
-        regex_pattern = re.sub(r"#+", r"(\\d+)", escaped_template)
+        regex_pattern = escaped_template.replace("___DIGIT_PLACEHOLDER___", r"(\d+)")
         compiled_regex = re.compile(f"^{regex_pattern}$")
         glob_pattern = re.sub(r"#+", "*", gb_var_full.mata_filename[layer])
         base_frames = []

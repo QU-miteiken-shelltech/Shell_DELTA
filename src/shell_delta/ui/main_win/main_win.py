@@ -112,7 +112,7 @@ class MainUserUi(QWidget,
                         return
                     self.layer_list.takeItem(selected_item_idx)
                     self.layer_list.insertItem(selected_item_idx - 1, selected_item)
-                    layer_order = gb_var_full.layer_order
+                    layer_order = gb_var_full.layer_order.copy()
                     item = layer_order.pop(selected_item_idx)
                     layer_order.insert(selected_item_idx - 1,item)
                     gb_var_full.restack_layers(
@@ -120,24 +120,27 @@ class MainUserUi(QWidget,
                         new_active_layer=selected_item_idx - 1
                     )
                     self.layer_list.setCurrentRow(selected_item_idx - 1)
-                    # self.gl_widget.update()
+                    self.gl_widget.texture = numpy.array(
+                        self.gl_widget.texture, dtype=object
+                    )[gb_var_full.layer_order[:len(self.gl_widget.texture)]].tolist()
+                    self.gl_widget.update()
                 elif pressed == Qt.Key.Key_D:
                     if selected_item_idx >= self.layer_list.count() - 1:
                         return
                     self.layer_list.takeItem(selected_item_idx)
                     self.layer_list.insertItem(selected_item_idx + 1, selected_item)
-                    print(f"selected_item_idx : {selected_item_idx}")
-                    layer_order = gb_var_full.layer_order
-                    print(f"layer_order : {layer_order}")
+                    layer_order = gb_var_full.layer_order.copy()
                     item = layer_order.pop(selected_item_idx)
                     layer_order.insert(selected_item_idx + 1,item)
-                    print(f"layer_order_2 : {gb_var_full.layer_order}")
                     gb_var_full.restack_layers(
                         new_layer_order=layer_order,
                         new_active_layer=selected_item_idx + 1
                     )
                     self.layer_list.setCurrentRow(selected_item_idx + 1)
-                    # self.gl_widget.update()
+                    self.gl_widget.texture = numpy.array(
+                        self.gl_widget.texture, dtype=object
+                    )[gb_var_full.layer_order[:len(self.gl_widget.texture)]].tolist()
+                    self.gl_widget.update()
             else:
                 if pressed == Qt.Key.Key_U:
                     if selected_item_idx <= 0:

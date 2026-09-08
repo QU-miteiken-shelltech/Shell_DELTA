@@ -15,6 +15,8 @@ from shell_delta import gb_var as gb_var_script
 gb_var = gb_var_script.get_gbvar_ctx()
 gb_var_full = gb_var_script.get_gbvar_full()
 
+MAX_LAYER = 8
+
 class MainWinIOMixin:
 
     def _show_expression_panel(self):
@@ -103,6 +105,7 @@ class MainWinIOMixin:
         filename, _ = QFileDialog.getOpenFileName(self, "Open Sequence", "", "PNG (*.png)")
         if not filename:
             return
+
         sequence_root_dir = Path(filename).resolve().parent
         matches = re.findall(r'\d+', filename)
         if len(matches) != 1:
@@ -111,14 +114,29 @@ class MainWinIOMixin:
         frame_notation_len = len(matches[0])
         sharps = '#' * frame_notation_len
         mata_filename = re.sub(r'\d+', sharps, filename).split("/")[-1]
-        appending_info = {
-            "base_frame_list" : "list[list[int]] = field(default_factory=lambda: list([[]]))",
-            "sequence_root_dir" : sequence_root_dir,
-            "mata_filename" : mata_filename,
-            "first_sequence_idx" : first_sequence_idx,
-            "frame_notation_len" : frame_notation_len
-        }
-        gb_var_full.append_info(new_info=appending_info)
+
+        if gb_var_script.IS_CONFIGED:
+            info = {
+                "sequence_root_dir" : sequence_root_dir,
+                "mata_filename" : mata_filename,
+                "first_sequence_idx" : first_sequence_idx,
+                "frame_notation_len" : frame_notation_len
+            }
+            gb_var_full.append_info(new_info=info)
+        else:
+            data = {
+                "base_frame_list" : [[]],
+                "sequence_root_dir" : [sequence_root_dir],
+                "mata_filename" : [mata_filename],
+                "first_sequence_idx" : [first_sequence_idx],
+                "frame_notation_len" : [frame_notation_len],
+                "ref_video_start" : 0,
+                "ref_path" : None,
+                "saving_path" : None,
+                "layer_order" : [i for i in range(0, MAX_LAYER)]
+            }
+            gb_var_full.initialize(init_data=data)
+            
         print(f"**** ; {len(gb_var_full.first_sequence_idx)}")
         base_frame_list = EditingUtils.get_base_frames(layer=len(gb_var_full.first_sequence_idx) - 1)
         gb_var_full.append_info(
@@ -149,12 +167,13 @@ class MainWinIOMixin:
         self.seq_idx = actual_img_idx
 
         self.gl_widget.change_image(new_image_paths=new_image_path)
-        self.ref_gl_widget.change_image(new_image_paths=filename)
+        self.ref_gl_widget.change_image(new_image_path=filename)
         self.current_opened_label.setText(
             f"Working Sequence : {sequence_root_dir / mata_filename}"
             )
         self.current_actual_img_idx_label.setText(str(self.seq_idx))
         self.current_frame_label.setText(str(first_sequence_idx))
+        self.layer_list.addItem(str(self.layer_list.count()))
 
 
     def open_reference(self):

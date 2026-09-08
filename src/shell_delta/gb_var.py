@@ -38,7 +38,6 @@ class GBVar:
     def get_instance(cls) -> "GBVar":
         if cls._instance is None:
             cls._instance = cls()
-            cls._instance.layer_order = [i for i in range(0, MAX_LAYER)]
         return cls._instance
 
     def initialize(self, 
@@ -68,26 +67,24 @@ class GBVar:
     def restack_layers(self, 
                        new_layer_order: list[int],
                        new_active_layer: int):
-        print(f"before : {self.layer_order}")
-        print(f"new order: {new_layer_order}")
-        self.layer_order = new_layer_order
-        print(f"after: {self.layer_order}")
+        self.layer_order = numpy.array(self.layer_order)[numpy.array(new_layer_order)].tolist()
         for field in fields(self):
             name = field.name
             val = getattr(self, name)
-            if isinstance(val, list):
+            if isinstance(val, list) and name != "layer_order":
                 setattr(
                     self, name, 
                     numpy.array(val, dtype=object)[self.layer_order[:len(val)]].tolist()
                 )
         current_time_map = time_map.time_map
         time_map.time_map = numpy.array(current_time_map, dtype=object)[self.layer_order[:len(current_time_map)]].tolist()
-        get_gbvar_ctx().switch_layer(new_active_layer=new_active_layer)
+        get_gbvar_ctx().switch_layer(new_active_layer=new_active_layer, do_write_back=False)
+        from dataclasses import asdict; print(asdict(self))
 
     def append_info(self,
                     new_info: dict):
         for field in fields(self):
-            name = field.namev
+            name = field.name
             val = getattr(self, name)
             if name in new_info and isinstance(val, list):
                 val.append(new_info[name])

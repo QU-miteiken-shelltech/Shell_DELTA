@@ -32,7 +32,7 @@ class LayerListWidget(QListWidget):
                     return
                 self.takeItem(selected_item_idx)
                 self.insertItem(selected_item_idx - 1, selected_item)
-                layer_order = gb_var_full.layer_order
+                layer_order = gb_var_full.layer_order.copy()
                 item = layer_order.pop(selected_item_idx)
                 layer_order.insert(selected_item_idx - 1,item)
                 gb_var_full.restack_layers(
@@ -46,7 +46,7 @@ class LayerListWidget(QListWidget):
                     return
                 self.takeItem(selected_item_idx)
                 self.insertItem(selected_item_idx + 1, selected_item)
-                layer_order = gb_var_full.layer_order
+                layer_order = gb_var_full.layer_order.copy()
                 item = layer_order.pop(selected_item_idx)
                 layer_order.insert(selected_item_idx + 1,item)
                 gb_var_full.restack_layers(
