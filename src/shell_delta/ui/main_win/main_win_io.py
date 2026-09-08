@@ -103,17 +103,25 @@ class MainWinIOMixin:
 
     def open_sequence(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open Sequence", "", "PNG (*.png)")
+        print("@@@@@CKPT1")
+
         if not filename:
             return
 
+        print("@@@@@CKPT2" + filename)
+
         sequence_root_dir = Path(filename).resolve().parent
-        matches = re.findall(r'\d+', filename)
+        matches = re.findall(r'\d+', Path(filename).name)
+        print(matches)
         if len(matches) != 1:
+            print("BYEBYE")
             return
         first_sequence_idx = int(matches[0])
         frame_notation_len = len(matches[0])
         sharps = '#' * frame_notation_len
-        mata_filename = re.sub(r'\d+', sharps, filename).split("/")[-1]
+        mata_filename = re.sub(r'\d+', sharps, Path(filename).name)
+
+        print(f"*** mata : {mata_filename}")
 
         if gb_var_script.IS_CONFIGED:
             info = {
@@ -122,7 +130,9 @@ class MainWinIOMixin:
                 "first_sequence_idx" : first_sequence_idx,
                 "frame_notation_len" : frame_notation_len
             }
+            print("+++ appending")
             gb_var_full.append_info(new_info=info)
+            print("+++ appended")
         else:
             data = {
                 "base_frame_list" : [[]],
@@ -136,12 +146,6 @@ class MainWinIOMixin:
                 "layer_order" : [i for i in range(0, MAX_LAYER)]
             }
             gb_var_full.initialize(init_data=data)
-            
-        print(f"**** ; {len(gb_var_full.first_sequence_idx)}")
-        base_frame_list = EditingUtils.get_base_frames(layer=len(gb_var_full.first_sequence_idx) - 1)
-        gb_var_full.append_info(
-            new_info={"base_frame_list" : base_frame_list}
-        )
 
         parts = [re.escape(p) for p in mata_filename.split(sharps)]
         regex_pattern = "^" + r"(\d+)".join(parts) + "$"
@@ -151,22 +155,36 @@ class MainWinIOMixin:
             if item.is_file() and (m := re.match(regex_pattern, item.name))
         ]
         time_map.time_map.append({})
+        print(f"numbers : {numbers}")
         for num in numbers:
+            print(f"++num : {num}")
             num = int(num)
-            time_map.time_map[gb_var.active_layer][num] = num
+            time_map.time_map[len(gb_var_full.first_sequence_idx) - 1][num] = num
+        print(f"OUT : {time_map.time_map}")
+            
+        self.seq_idx = first_sequence_idx
+        base_frame_list = EditingUtils.get_base_frames(layer=len(gb_var_full.first_sequence_idx) - 1)
+        gb_var_full.append_info(
+            new_info={"base_frame_list" : base_frame_list}
+        )
+            
         gb_var.switch_layer(new_active_layer=len(gb_var_full.first_sequence_idx) - 1)
 
         new_image_paths = []
         for l in range(0, len(gb_var_full.first_sequence_idx)):
+            print(f"CKPT : {self.seq_idx}")
             actual_img_idx = EditingUtils.get_actual_img_idx(seq_idx=self.seq_idx, layer=l)
             actual_filename = EditingUtils.get_actual_filepath(img_idx=actual_img_idx, layer=l)
             new_image_path = gb_var_full.sequence_root_dir[l] / actual_filename
             if not new_image_path.exists():
+                print(f"NOT found : {new_image_path}")
                 new_image_path = str(Path(__file__).resolve().parents[2] / "_resources" / "fallback.png")
             new_image_paths.append(str(new_image_path))
         self.seq_idx = actual_img_idx
 
-        self.gl_widget.change_image(new_image_paths=new_image_path)
+        print(new_image_paths)
+
+        self.gl_widget.change_image(new_image_paths=new_image_paths)
         self.ref_gl_widget.change_image(new_image_path=filename)
         self.current_opened_label.setText(
             f"Working Sequence : {sequence_root_dir / mata_filename}"

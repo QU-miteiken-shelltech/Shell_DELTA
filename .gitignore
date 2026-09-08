@@ -6,3 +6,4 @@ src/shell_delta/testPNGs/
 **/build/**
 **/out/**
 **/test/**
+**/*.prof
