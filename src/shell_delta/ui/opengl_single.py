@@ -108,7 +108,6 @@ class OpenGLImageSingleWidget(QOpenGLWidget):
                      ) -> None:
         new_image_path = str(new_image_path)
         self.makeCurrent()
-        print("CKPT_single ctx:", id(QOpenGLContext.currentContext()))
         self._load_texture(new_image_path)
         self.resizeGL(self.width(), self.height())
         self.doneCurrent()

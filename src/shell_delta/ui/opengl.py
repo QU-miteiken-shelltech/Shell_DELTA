@@ -171,8 +171,6 @@ class OpenGLImageWidget(QOpenGLWidget):
                            ) -> None:
         if not self.ram_img_buffer:
             return
-        print(next_image_paths)
-        print("*****")
         next_image_paths = [str(x) for x in next_image_paths]
         try:
             self.texture = []

@@ -13,7 +13,6 @@ class EditingUtils:
                            seq_idx: int,
                            layer: int
                            ) -> int:
-        print(time_map.time_map)
         actual_img_idx = time_map.time_map[layer].get(seq_idx, None)
         if actual_img_idx is not None:
             return actual_img_idx
@@ -28,10 +27,6 @@ class EditingUtils:
                             img_idx: int,
                             layer: int
                             ) -> str:
-        print(f"001step - {gb_var_full.mata_filename[layer]}")
-        print(f"002step - {'#' * gb_var_full.frame_notation_len[layer]}")
-        print(f"003step - {f"{img_idx:0{gb_var_full.frame_notation_len[layer]}d}"}")
-        print(f"pf : imgidx {img_idx} gb_var_full.frame_notation_len[layer] {gb_var_full.frame_notation_len[layer]}")
         actual_filename = gb_var_full.mata_filename[layer].replace(
             '#' * gb_var_full.frame_notation_len[layer], 
             f"{img_idx:0{gb_var_full.frame_notation_len[layer]}d}"
@@ -46,7 +41,6 @@ class EditingUtils:
         if root_dir is None or not root_dir.exists():
             return
         template = gb_var_full.mata_filename[layer]
-        print(f"template - {template}")
         placeholder_template = re.sub(r"#+", "___DIGIT_PLACEHOLDER___", template)
         escaped_template = re.escape(placeholder_template)
         escaped_template = re.escape(gb_var_full.mata_filename[layer])
